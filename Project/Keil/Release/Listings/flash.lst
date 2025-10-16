@@ -1,0 +1,93 @@
+C51 COMPILER V9.60.7.0   FLASH                                                             10/14/2025 18:17:20 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE FLASH
+OBJECT MODULE PLACED IN .\Release\Objects\flash.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\flash.c LARGE OPTIMIZE(9,SIZE) BROWSE INTVECTOR(0X000C) INCDI
+                    -R(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\flash.lst) OBJECT(.\Releas
+                    -e\Objects\flash.obj)
+
+line level    source
+
+   1          #include "flash.h"
+   2          
+   3          #if 0
+                  // 扇区擦除
+                  flash_erase_sector(FLASH_START_ADDR);
+                  // 写入数据
+                  flash_program(FLASH_START_ADDR, tx_buf, sizeof(tx_buf));
+                  // 读取数据
+                  flash_read(FLASH_START_ADDR, rx_buf, sizeof(rx_buf));
+              #endif
+  11          
+  12          /**
+  13           * @brief  flash erase sector
+  14           * @param  addr : sector address in flash
+  15           * @retval None
+  16           */
+  17          void flash_erase_sector(u8 addr)
+  18          {
+  19   1          FLASH_ADDR = 0x3F;
+  20   1          FLASH_ADDR = addr;
+  21   1          FLASH_PASSWORD = FLASH_PASSWORD(0xB9); // 写入操作密码
+  22   1          FLASH_CON = FLASH_SER_TRG(0x1);        // 触发扇区擦除
+  23   1      
+  24   1          while (!(FLASH_STA & FLASH_SER_FLG(0x1)))
+  25   1              ; // 等待扇区擦除空闲
+  26   1      }
+  27          
+  28          /**
+  29           * @brief  flash program
+  30           * @param  addr   : Write data address in flash
+  31           * @param  p_data : Write data to flash
+  32           * @param  len    : Data length
+  33           * @retval None
+  34           */
+  35          void flash_program(u8 addr, u8 *p_data, u8 len)
+  36          {
+  37   1          FLASH_ADDR = 0x3F;
+  38   1          FLASH_ADDR = addr;
+  39   1      
+  40   1          while (len >= 1)
+  41   1          {
+  42   2              while (!(FLASH_STA & FLASH_PROG_FLG(0x1)))
+  43   2                  ; // 等待烧录空闲
+  44   2              FLASH_DATA = *(p_data++);
+  45   2              FLASH_PASSWORD = FLASH_PASSWORD(0xB9); // 写入操作密码
+  46   2              FLASH_CON = FLASH_PROG_TRG(0x1);       // 触发烧录
+  47   2      
+  48   2              len -= 1;
+  49   2          }
+  50   1      }
+  51          
+  52          /**
+  53           * @brief  flash program
+C51 COMPILER V9.60.7.0   FLASH                                                             10/14/2025 18:17:20 PAGE 2   
+
+  54           * @param  addr   : Read data address in flash
+  55           * @param  p_data : Read data to flash
+  56           * @param  len    : Data length
+  57           * @retval None
+  58           */
+  59          void flash_read(u8 addr, u8 *p_data, u8 len)
+  60          {
+  61   1          while (len != 0)
+  62   1          {
+  63   2              *(p_data++) = *((u8 code *)(0x3F00 + addr++));
+  64   2              len--;
+  65   2          }
+  66   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    124    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----      10
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "timer2.h": "c",
+        "my_config.h": "c",
+        "rf_recv.h": "c",
+        "debug.h": "c",
+        "include.h": "c",
+        "pwm.h": "c",
+        "time0.h": "c",
+        "key_driver.h": "c",
+        "timer1.h": "c",
+        "knob_dimming.h": "c",
+        "flash.h": "c",
+        "fan_ctl.h": "c"
+    }
+}

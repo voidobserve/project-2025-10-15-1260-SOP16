@@ -1,0 +1,453 @@
+C51 COMPILER V9.60.7.0   ADC                                                               10/14/2025 18:17:19 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE ADC
+OBJECT MODULE PLACED IN .\Release\Objects\adc.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\adc.c LARGE OPTIMIZE(9,SIZE) BROWSE INTVECTOR(0X000C) INCDIR(
+                    -..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\adc.lst) OBJECT(.\Release\Ob
+                    -jects\adc.obj)
+
+line level    source
+
+   1          #include "adc.h"
+   2          #include "my_config.h"
+   3          
+   4          // 存放温度状态的变量
+   5          volatile u8 temp_status = TEMP_NORMAL;
+   6          
+   7          volatile u16 adc_val_pin_9 = 0; // 存放9脚采集到的ad值
+   8          
+   9          volatile bit flag_tim_scan_fan_is_err = 0;      // 标志位，由定时器扫描并累计时间，表示�
+             -��前风扇是否异常
+  10          volatile u8 cur_fan_status = FAN_STATUS_NORMAL; // 当前风扇状态
+  11          
+  12          // volatile bit flag_is_pin_9_vol_bounce = 0; // 标志位，9脚电压是否发生了跳动
+  13          
+  14          // adc相关的引脚配置
+  15          void adc_pin_config(void)
+  16          {
+  17   1          // P30--8脚配置为模拟输入模式
+  18   1          P3_MD0 |= GPIO_P30_MODE_SEL(0x3);
+  19   1      
+  20   1          // P27--9脚配置为模拟输入模式
+  21   1          P2_MD1 |= GPIO_P27_MODE_SEL(0x3);
+  22   1      
+  23   1          // P31--7脚配置为模拟输入模式
+  24   1          P3_PU &= ~(0x01 << 1); // 关闭上拉
+  25   1          P3_PD &= ~(0x01 << 1); // 关闭下拉
+  26   1          P3_MD0 |= GPIO_P31_MODE_SEL(0x3);
+  27   1      
+  28   1          // P13 -- 芯片的1脚，配置为模拟输入模式
+  29   1          P1_PU &= ~(0x01 << 3);             // 关闭上拉
+  30   1          P1_PD &= ~(0x01 << 3);             // 关闭下拉
+  31   1          P1_MD0 |= GPIO_P13_MODE_SEL(0x03); // 模拟IO工作模式
+  32   1      }
+  33          
+  34          // 切换adc采集的引脚，配置好adc
+  35          // 参数可以选择：
+  36          // ADC_SEL_PIN_GET_TEMP
+  37          // ADC_SEL_PIN_GET_VOL
+  38          void adc_sel_pin(const u8 adc_sel)
+  39          {
+  40   1          // 切换采集引脚时，把之前采集到的ad值清空
+  41   1          // adc0_val = 0;
+  42   1          static u8 last_adc_sel = 0;
+  43   1          if (last_adc_sel == adc_sel)
+  44   1          {
+  45   2              // 如果当前采集adc的引脚就是要配置的adc引脚，不用再继续配置，直接退�
+             -�
+  46   2              return;
+  47   2          }
+  48   1      
+  49   1          last_adc_sel = adc_sel;
+  50   1      
+  51   1          ADC_CFG1 |= (0x0F << 3); // ADC时钟分频为16分频，为系统时钟/16
+C51 COMPILER V9.60.7.0   ADC                                                               10/14/2025 18:17:19 PAGE 2   
+
+  52   1          ADC_CFG2 = 0xFF;         // 通道0采样时间配置为256个采样时钟周期
+  53   1      
+  54   1          switch (adc_sel)
+  55   1          {
+  56   2          case ADC_SEL_PIN_GET_TEMP: // 采集热敏电阻对应的电压的引脚（8脚）
+  57   2      
+  58   2              // ADC配置
+  59   2              ADC_ACON1 &= ~(ADC_VREF_SEL(0x7) | ADC_EXREF_SEL(0) | ADC_INREF_SEL(0)); // 关闭外部参考电�
+             -��，清除选择的参考电压
+  60   2              ADC_ACON1 |= ADC_VREF_SEL(0x6) |                                         // 选择内部参考电�
+             -��VCCA
+  61   2                           ADC_TEN_SEL(0x3);                                           // 关闭测试信号
+  62   2              ADC_ACON0 = ADC_CMP_EN(0x1) |                                            // 打开ADC中的CMP使�
+             -��信号
+  63   2                          ADC_BIAS_EN(0x1) |                                           // 打开ADC偏置电流�
+             -��使信号
+  64   2                          ADC_BIAS_SEL(0x1);                                           // 偏置电流：1x
+  65   2      
+  66   2              ADC_CHS0 = ADC_ANALOG_CHAN(0x18) | // 选则引脚对应的通道（0x18--P30）
+  67   2                         ADC_EXT_SEL(0x0);       // 选择外部通道
+  68   2      
+  69   2              break;
+  70   2      
+  71   2          case ADC_SEL_PIN_GET_VOL: // 检测回路电压的引脚（9脚）
+  72   2      
+  73   2              // ADC配置
+  74   2              ADC_ACON1 &= ~(ADC_VREF_SEL(0x7) | ADC_EXREF_SEL(0x01)); // 关闭外部参考电压，清除选�
+             -�的参考电压
+  75   2              // ADC_ACON1 |= ADC_VREF_SEL(0x6) |                                         // 选择内部参考�
+             -��压VCCA
+  76   2              //              ADC_TEN_SEL(0x3);
+  77   2              ADC_ACON1 |= ADC_VREF_SEL(0x5) |   // 选择内部参考电压 4.2V (用户手册说未校准)
+  78   2                           ADC_TEN_SEL(0x3);     /* 关闭测试信号 */
+  79   2              ADC_ACON0 = ADC_CMP_EN(0x1) |      // 打开ADC中的CMP使能信号
+  80   2                          ADC_BIAS_EN(0x1) |     // 打开ADC偏置电流能使信号
+  81   2                          ADC_BIAS_SEL(0x1);     // 偏置电流：1x
+  82   2              ADC_CHS0 = ADC_ANALOG_CHAN(0x17) | // 选则引脚对应的通道（0x17--P27）
+  83   2                         ADC_EXT_SEL(0x0);       // 选择外部通道
+  84   2      
+  85   2              break;
+  86   2      
+  87   2          case ADC_SEL_PIN_P31: // P31、7脚，检测旋钮调光
+  88   2      
+  89   2              // ADC配置
+  90   2              ADC_ACON1 &= ~(ADC_VREF_SEL(0x7)); // 关闭外部参考电压、清除选择的参考电压
+  91   2              ADC_ACON1 |= ADC_VREF_SEL(0x6) |   // 选择内部参考电压VCCA
+  92   2                           ADC_TEN_SEL(0x3);     // 关闭测试信号
+  93   2              ADC_ACON0 = ADC_CMP_EN(0x1) |      // 打开ADC中的CMP使能信号
+  94   2                          ADC_BIAS_EN(0x1) |     // 打开ADC偏置电流能使信号
+  95   2                          ADC_BIAS_SEL(0x1);     // 偏置电流：1x
+  96   2              ADC_CHS0 = ADC_ANALOG_CHAN(0x19) | // 选则引脚对应的通道（0x19--P31）
+  97   2                         ADC_EXT_SEL(0x0);       // 选择外部通道
+  98   2      
+  99   2              break;
+ 100   2      
+ 101   2          case ADC_SEL_PIN_FAN_DETECT: // P13 芯片的1脚，检测风扇是否异常
+ 102   2      
+ 103   2              ADC_ACON1 &= ~(ADC_VREF_SEL(0x7) | ADC_EXREF_SEL(0x01) | ADC_INREF_SEL(0)); // 关闭外部参考�
+             -��压，不选择外部参考，清除选择的参考电压
+ 104   2              ADC_ACON1 |= ADC_VREF_SEL(0x6) |                                            // 选择内部参考�
+             -��压VCCA
+ 105   2                           ADC_TEN_SEL(0x3);                                              // 关闭测试信号
+C51 COMPILER V9.60.7.0   ADC                                                               10/14/2025 18:17:19 PAGE 3   
+
+ 106   2              ADC_ACON0 = ADC_CMP_EN(0x1) |                                               // 打开ADC中的CMP�
+             -��能信号
+ 107   2                          ADC_BIAS_EN(0x1) |                                              // 打开ADC偏置电�
+             -��能使信号
+ 108   2                          ADC_BIAS_SEL(0x1);                                              // 偏置电流：1x
+ 109   2      
+ 110   2              ADC_CHS0 = ADC_ANALOG_CHAN(0x0B) | // 选则引脚对应的通道（0x0B--P13）
+ 111   2                         ADC_EXT_SEL(0x0);       // 选择外部通道
+ 112   2      
+ 113   2              break;
+ 114   2          }
+ 115   1      
+ 116   1          ADC_CFG0 |= ADC_CHAN0_EN(0x1) | // 使能通道0转换
+ 117   1                      ADC_EN(0x1);        // 使能A/D转换
+ 118   1          delay_ms(1);                    // 等待ADC稳定
+ 119   1      }
+ 120           
+ 121          
+ 122          // adc单次采集+转换（没有滤波）
+ 123          u16 adc_get_val_single(void)
+ 124          {
+ 125   1          u16 adc_val = 0;
+ 126   1          ADC_CFG0 |= ADC_CHAN0_TRG(0x1); // 触发ADC0转换
+ 127   1          while (!(ADC_STA & ADC_CHAN0_DONE(0x1)))
+ 128   1              ;                                             // 等待转换完成
+ 129   1          adc_val = (ADC_DATAH0 << 4) | (ADC_DATAL0 >> 4);  // 读取channel0的值
+ 130   1          ADC_STA = ADC_CHAN0_DONE(0x1);                    // 清除ADC0转换完成标志位
+ 131   1          return adc_val;
+ 132   1      }
+ 133          
+ 134          // 获取一次adc采集+滤波后的值
+ 135          u16 adc_get_val(void)
+ 136          {
+ 137   1          u8 i = 0; // adc采集次数的计数
+ 138   1          volatile u16 g_temp_value = 0;
+ 139   1          volatile u32 g_tmpbuff = 0;
+ 140   1          volatile u16 g_adcmax = 0;
+ 141   1          volatile u16 g_adcmin = 0xFFFF;
+ 142   1      
+ 143   1          // 采集20次，去掉前两次采样，再去掉一个最大值和一个最小值，再取平均值
+ 144   1          for (i = 0; i < 20; i++)
+ 145   1          {
+ 146   2              ADC_CFG0 |= ADC_CHAN0_TRG(0x1); // 触发ADC0转换
+ 147   2              while (!(ADC_STA & ADC_CHAN0_DONE(0x1)))
+ 148   2                  ;                                                 // 等待转换完成
+ 149   2              g_temp_value = (ADC_DATAH0 << 4) | (ADC_DATAL0 >> 4); // 读取 channel0 的值
+ 150   2              ADC_STA = ADC_CHAN0_DONE(0x1);                        // 清除ADC0转换完成标志位
+ 151   2      
+ 152   2              if (i < 2)
+ 153   2                  continue; // 丢弃前两次采样的
+ 154   2              if (g_temp_value > g_adcmax)
+ 155   2                  g_adcmax = g_temp_value; // 最大
+ 156   2              if (g_temp_value < g_adcmin)
+ 157   2                  g_adcmin = g_temp_value; // 最小
+ 158   2      
+ 159   2              g_tmpbuff += g_temp_value;
+ 160   2          }
+ 161   1      
+ 162   1          g_tmpbuff -= g_adcmax;           // 去掉一个最大
+ 163   1          g_tmpbuff -= g_adcmin;           // 去掉一个最小
+ 164   1          g_temp_value = (g_tmpbuff >> 4); // 除以16，取平均值
+ 165   1      
+C51 COMPILER V9.60.7.0   ADC                                                               10/14/2025 18:17:19 PAGE 4   
+
+ 166   1          return g_temp_value;
+ 167   1      }
+ 168          
+ 169          // 从引脚上采集滤波后的电压值,函数内部会将采集到的ad转换成对应的电压值
+ 170          u32 get_voltage_from_pin(void)
+ 171          {
+ 172   1          volatile u32 adc_aver_val = 0; // 存放adc滤波后的值
+ 173   1          // 采集热敏电阻的电压
+ 174   1          adc_aver_val = adc_get_val();
+ 175   1      
+ 176   1          // 4095（adc转换后，可能出现的最大的值） * 0.0012 == 4.914，约等于5V（VCC）
+ 177   1          return adc_aver_val * 12 / 10; // 假设是4095，4095 * 12/10 == 4915mV
+ 178   1      }
+ 179          
+ 180          // 温度检测功能
+ 181          void temperature_scan(void)
+ 182          {
+ 183   1          volatile u32 voltage = 0; // 存放adc采集到的电压，单位：mV
+ 184   1      
+ 185   1          // 如果已经超过75摄氏度且超过30min，不用再检测8脚的电压，等待用户排查原�
+             -��，再重启（重新上电）
+ 186   1          // if (TEMP_75_30MIN == temp_status)
+ 187   1          // 如果已经超过75摄氏度且超过5min，不用再检测8脚的电压，等待用户排查原�
+             -�，再重启（重新上电）
+ 188   1          if (TEMP_75_5_MIN == temp_status)
+ 189   1          {
+ 190   2              return;
+ 191   2          }
+ 192   1      
+ 193   1          adc_sel_pin(ADC_SEL_PIN_GET_TEMP); // 先切换成热敏电阻对应的引脚的adc配置
+ 194   1          voltage = get_voltage_from_pin();  // 采集热敏电阻上的电压
+ 195   1      
+ 196   1          // MY_DEBUG:
+ 197   1          // voltage = 4095; // 测试用
+ 198   1      
+ 199   1      #if USE_MY_DEBUG
+                  // printf("PIN-8 voltage: %lu mV\n", voltage);
+              #endif // USE_MY_DEBUG
+ 202   1      
+ 203   1          // 如果之前的温度为正常，检测是否超过75摄氏度（±5摄氏度）
+ 204   1          if (TEMP_NORMAL == temp_status && voltage < VOLTAGE_TEMP_75)
+ 205   1          {
+ 206   2              // 如果检测到温度大于75摄氏度（测得的电压值要小于75摄氏度对应的电压�
+             -��）
+ 207   2      
+ 208   2              {
+ 209   3                  // 检测10次，如果10次都小于这个电压值，才说明温度真的大于75摄氏度
+ 210   3                  u8 i = 0;
+ 211   3                  for (i = 0; i < 10; i++)
+ 212   3                  {
+ 213   4                      voltage = get_voltage_from_pin(); // 采集热敏电阻上的电压
+ 214   4                      if (voltage > VOLTAGE_TEMP_75)
+ 215   4                      {
+ 216   5                          // 只要有一次温度小于75摄氏度，就认为温度没有大于75摄氏度
+ 217   5                          temp_status = TEMP_NORMAL;
+ 218   5                          return;
+ 219   5                      }
+ 220   4                  }
+ 221   3      
+ 222   3                  // 如果运行到这里，说明温度确实大于75摄氏度
+ 223   3      #if USE_MY_DEBUG
+              // printf("温度超过了75摄氏度\n");
+C51 COMPILER V9.60.7.0   ADC                                                               10/14/2025 18:17:19 PAGE 5   
+
+              // printf("此时采集到的电压值：%lu mV", voltage);
+              #endif
+ 227   3                  temp_status = TEMP_75; // 状态标志设置为超过75摄氏度
+ 228   3                  return;                // 函数返回，让调节占空比的函数先进行调节
+ 229   3              }
+ 230   2      
+ 231   2              // static u8 flag_adc_filter = 0;
+ 232   2              // flag_adc_filter <<= 1;
+ 233   2              // if (voltage > VOLTAGE_TEMP_75) // 电压值大于75度对应的电压，说明温度小于75度
+ 234   2              // {
+ 235   2              //     flag_adc_filter = 0;
+ 236   2              // }
+ 237   2              // else
+ 238   2              // {
+ 239   2              //     flag_adc_filter |= 1;
+ 240   2              // }
+ 241   2      
+ 242   2              // if (flag_adc_filter == 0xFF)
+ 243   2              // {
+ 244   2              // }
+ 245   2          }
+ 246   1          else if (temp_status == TEMP_75)
+ 247   1          {
+ 248   2              // 如果之前的温度超过75摄氏度
+ 249   2              static bit tmr1_is_open = 0;
+ 250   2      
+ 251   2              if (0 == tmr1_is_open)
+ 252   2              {
+ 253   3                  tmr1_is_open = 1;
+ 254   3                  tmr1_cnt = 0;
+ 255   3                  tmr1_enable(); // 打开定时器，开始记录是否大于75摄氏度且超过30min
+ 256   3              }
+ 257   2      
+ 258   2              // while (1) // 这个while循环会影响到9脚调节16脚电压的功能
+ 259   2              // {
+ 260   2      #if 0 // 这里的代码在客户那边反而出现问题，超过90摄氏度且1个小时都没有将PWM�
+             -��到25%，
+                    // 可能是用户那边的电压有跳变，导致这里清空了定时器计数
+                          if (voltage > VOLTAGE_TEMP_75)
+                          {
+                              // 只要有一次温度小于75摄氏度，就认为温度没有大于75摄氏度
+                              temp_status = TEMP_75; // 温度标记为超过75摄氏度，但是没有累计30min
+                              tmr1_disable();        // 关闭定时器
+                              tmr1_cnt = 0;          // 清空时间计数值
+              #if USE_MY_DEBUG
+                              // printf("在温度超过了75摄氏度时，检测到有一次温度没有超过75摄氏
+             -度\n");
+                              // printf("此时采集到的电压值：%lu mV\n", voltage);
+              #endif
+                              return;
+                          }
+              #endif
+ 275   2              // 如果超过75摄氏度并且过了30min，再检测温度是否超过75摄氏度
+ 276   2              // if (tmr1_cnt >= (u32)TMR1_CNT_30_MINUTES)
+ 277   2              // 如果超过75摄氏度并且过了5min，再检测温度是否超过75摄氏度
+ 278   2              if (tmr1_cnt >= (u32)TMR1_CNT_5_MINUTES)
+ 279   2              {
+ 280   3                  u8 i = 0;
+ 281   3      #if USE_MY_DEBUG
+                          // printf("温度超过了75摄氏度且超过了30min\n");
+                          // printf("此时采集到的电压值：%lu mV\n", voltage);
+              #endif
+C51 COMPILER V9.60.7.0   ADC                                                               10/14/2025 18:17:19 PAGE 6   
+
+ 285   3      
+ 286   3                  for (i = 0; i < 10; i++)
+ 287   3                  {
+ 288   4                      voltage = get_voltage_from_pin(); // 采集热敏电阻上的电压
+ 289   4                      if (voltage > VOLTAGE_TEMP_75)
+ 290   4                      {
+ 291   5                          // 只要有一次温度小于75摄氏度，就认为温度没有大于75摄氏度
+ 292   5                          temp_status = TEMP_75;
+ 293   5                          return;
+ 294   5                      }
+ 295   4                  }
+ 296   3      
+ 297   3                  // 如果运行到这里，说明上面连续、多次检测到的温度都大于75摄氏度
+ 298   3                  // temp_status = TEMP_75_30MIN;
+ 299   3                  temp_status = TEMP_75_5_MIN;
+ 300   3                  tmr1_disable(); // 关闭定时器
+ 301   3                  tmr1_cnt = 0;   // 清空时间计数值
+ 302   3                  tmr1_is_open = 0;
+ 303   3                  return;
+ 304   3              }
+ 305   2              // }  // while(1)
+ 306   2          }
+ 307   1      }
+ 308          
+ 309          // 根据温度（电压值扫描）或9脚的状态来设定占空比
+ 310          void set_duty(void)
+ 311          {
+ 312   1          // 如果温度正常，根据9脚的状态来调节PWM占空比
+ 313   1          if (TEMP_NORMAL == temp_status)
+ 314   1          {
+ 315   2              according_pin9_to_adjust_pwm();
+ 316   2      #if USE_MY_DEBUG
+                      // printf("cur duty: %d\n", c_duty);
+              #endif
+ 319   2          }
+ 320   1          else if (TEMP_75 == temp_status)
+ 321   1          {
+ 322   2              limited_pwm_duty_due_to_temp = PWM_DUTY_50_PERCENT; // 将pwm占空比限制到最大占空比的 
+             -50%
+ 323   2          }
+ 324   1          // else if (TEMP_75_30MIN == temp_status)
+ 325   1          else if (TEMP_75_5_MIN == temp_status)
+ 326   1          {
+ 327   2              limited_pwm_duty_due_to_temp = PWM_DUTY_25_PERCENT; // 将pwm占空比限制到最大占空比的 
+             -25%
+ 328   2          }
+ 329   1      }
+ 330          
+ 331          // volatile u16 adc_val_pin_9_filter_count = 0;
+ 332          // u16 adc_val_pin_9_temp;
+ 333          // 更新9脚采集的ad值
+ 334          void adc_update_pin_9_adc_val(void)
+ 335          {
+ 336   1          adc_sel_pin(ADC_SEL_PIN_GET_VOL);
+ 337   1          adc_val_pin_9 = adc_get_val();
+ 338   1      
+ 339   1      #if USE_MY_DEBUG // 打印从9脚采集到的ad值
+                  // printf("adc_val_pin_9 %u\n", adc_val_pin_9);
+              
+                  // printf(",a=%u,", adc_val_pin_9);
+              #endif // USE_MY_DEBUG // 打印从9脚采集到的ad值
+ 344   1      }
+C51 COMPILER V9.60.7.0   ADC                                                               10/14/2025 18:17:19 PAGE 7   
+
+ 345          
+ 346          void fan_scan(void)
+ 347          {  
+ 348   1          u16 adc_val = 0;
+ 349   1          adc_sel_pin(ADC_SEL_PIN_FAN_DETECT);
+ 350   1          adc_val = adc_get_val();
+ 351   1      
+ 352   1          // {
+ 353   1          //     static u16 cnt = 0;
+ 354   1          //     cnt++;
+ 355   1          //     if (cnt >= 200)
+ 356   1          //     {
+ 357   1          //         cnt = 0;
+ 358   1          //         printf("fan adc val : %u\n", adc_val);
+ 359   1          //     }
+ 360   1          // }
+ 361   1      
+ 362   1          /*
+ 363   1              1脚电压低于4.3V时，14，15脚输出25%占空比，
+ 364   1              1脚电压高于4.5V时，14，15脚输出100%占空比
+ 365   1          */
+ 366   1      
+ 367   1          if (FAN_STATUS_NORMAL == cur_fan_status)
+ 368   1          {
+ 369   2              if (adc_val <= ADC_VAL_WHEN_FAN_ERR)
+ 370   2              {
+ 371   3                  flag_tim_scan_fan_is_err = 1; // 表示风扇异常，让定时器累计时间
+ 372   3              }
+ 373   2              else
+ 374   2              {
+ 375   3                  // 风扇正常时，只要有一次ad值不满足异常的条件，便认为它是正常工�
+             -�
+ 376   3                  flag_tim_scan_fan_is_err = 0;
+ 377   3              }
+ 378   2      
+ 379   2              // 风扇正常工作，pwm正常输出
+ 380   2              limited_pwm_duty_due_to_fan_err = PWM_DUTY_100_PERCENT;
+ 381   2          }
+ 382   1          else // FAN_STATUS_ERROR == cur_fan_status
+ 383   1          {
+ 384   2              // 风扇异常时，检测到的ad值要与【风扇异常时对应的ad值】相隔一个死区�
+             -��才认为风扇恢复正常
+ 385   2              if (adc_val >= ADC_VAL_WHEN_FAN_NORMAL)
+ 386   2              {
+ 387   3                  flag_tim_scan_fan_is_err = 0; // 表示风扇正常
+ 388   3              }
+ 389   2      
+ 390   2              // 风扇工作异常，限制pwm输出，占空比不超过25%
+ 391   2              limited_pwm_duty_due_to_fan_err = PWM_DUTY_25_PERCENT;
+ 392   2          }
+ 393   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    855    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      5      20
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+C51 COMPILER V9.60.7.0   ADC                                                               10/14/2025 18:17:19 PAGE 8   
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

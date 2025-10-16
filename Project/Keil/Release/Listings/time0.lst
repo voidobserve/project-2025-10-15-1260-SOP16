@@ -1,0 +1,173 @@
+C51 COMPILER V9.60.7.0   TIME0                                                             10/14/2025 18:17:19 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIME0
+OBJECT MODULE PLACED IN .\Release\Objects\time0.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\time0.c LARGE OPTIMIZE(9,SIZE) BROWSE INTVECTOR(0X000C) INCDI
+                    -R(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\time0.lst) OBJECT(.\Releas
+                    -e\Objects\time0.obj)
+
+line level    source
+
+   1          #include "time0.h"
+   2          
+   3          // u8 ms_cnt = 0;
+   4          // volatile bit tmr0_flag = 0;
+   5          
+   6          static volatile u8 cnt_during_power_on = 0;       // 开机缓启动，调节pwm占空比时，使用到�
+             -�计数值
+   7          volatile bit flag_time_comes_during_power_on = 0; // 标志位，开机缓启动期间，调节时间到�
+             -�
+   8          
+   9          /**
+  10           * @brief 配置定时器TMR0，定时器默认关闭
+  11           */
+  12          void tmr0_config(void)
+  13          {
+  14   1          __EnableIRQ(TMR0_IRQn); // 使能timer0中断
+  15   1          IE_EA = 1;              // 使能总中断
+  16   1      
+  17   1      #define PEROID_VAL (SYSCLK / 128 / 1000 - 1) // 周期值=系统时钟/分频/频率 - 1
+  18   1          // 设置timer0的计数功能，配置一个频率为1kHz的中断
+  19   1          TMR_ALLCON = TMR0_CNT_CLR(0x1);                        // 清除计数值
+  20   1          TMR0_PRH = TMR_PERIOD_VAL_H((PEROID_VAL >> 8) & 0xFF); // 周期值
+  21   1          TMR0_PRL = TMR_PERIOD_VAL_L((PEROID_VAL >> 0) & 0xFF);
+  22   1          TMR0_CONH = TMR_PRD_PND(0x1) | TMR_PRD_IRQ_EN(0x1);                          // 计数等于周期时�
+             -��许发生中断
+  23   1          TMR0_CONL = TMR_SOURCE_SEL(0x7) | TMR_PRESCALE_SEL(0x7) | TMR_MODE_SEL(0x1); // 选择系统时钟，1
+             -28分频，计数模式
+  24   1      }
+  25          
+  26          // /**
+  27          //  * @brief 开启定时器TMR0，开始计时
+  28          //  */
+  29          // void tmr0_enable(void)
+  30          // {
+  31          //     // 重新给TMR0配置时钟
+  32          //     TMR0_CONL &= ~(TMR_SOURCE_SEL(0x07)); // 清除定时器的时钟源配置寄存器
+  33          //     TMR0_CONL |= TMR_SOURCE_SEL(0x06);    // 配置定时器的时钟源，使用系统时钟（约21MH
+             -z）
+  34          
+  35          //     __EnableIRQ(TMR0_IRQn); // 使能中断
+  36          //     IE_EA = 1;              // 打开总中断
+  37          // }
+  38          
+  39          // /**
+  40          //  * @brief 关闭定时器0，清空计数值
+  41          //  */
+  42          // void tmr0_disable(void)
+  43          // {
+  44          //     // 不给定时器提供时钟，让它停止计数
+  45          //     TMR0_CONL &= ~(TMR_SOURCE_SEL(0x07)); // 清除定时器的时钟源配置寄存器
+  46          //     TMR0_CONL |= TMR_SOURCE_SEL(0x05);    // 配置定时器的时钟源，不用任何时钟
+  47          
+  48          //     // 清除定时器的计数值
+C51 COMPILER V9.60.7.0   TIME0                                                             10/14/2025 18:17:19 PAGE 2   
+
+  49          //     TMR0_CNTL = 0;
+  50          //     TMR0_CNTH = 0;
+  51          
+  52          //     __DisableIRQ(TMR0_IRQn); // 关闭中断（不使能中断）
+  53          // }
+  54          
+  55          // extern void fun(void);
+  56          // 定时器TMR0中断服务函数
+  57          void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
+  58          {
+  59   1          // 进入中断设置IP，不可删除
+  60   1          __IRQnIPnPush(TMR0_IRQn);
+  61   1      
+  62   1          // ---------------- 用户函数处理 -------------------
+  63   1      
+  64   1          // 周期中断
+  65   1          if (TMR0_CONH & TMR_PRD_PND(0x1))
+  66   1          {
+  67   2              TMR0_CONH |= TMR_PRD_PND(0x1); // 清除pending
+  68   2      
+  69   2              // ms_cnt++;
+  70   2              cnt_during_power_on++;
+  71   2      
+  72   2              // if (ms_cnt >= 25)
+  73   2              // {
+  74   2              //     ms_cnt = 0;
+  75   2              //     // tmr0_flag = 1;
+  76   2              // }
+  77   2      
+  78   2              if (cnt_during_power_on >= 13) // 13ms
+  79   2              {
+  80   3                  cnt_during_power_on = 0;
+  81   3                  flag_time_comes_during_power_on = 1; // 开机缓启动期间，控制每次调节PWM占空比
+             -的时间
+  82   3              }
+  83   2      
+  84   2              if (rf_key_para.cur_scan_times < 255)
+  85   2              {
+  86   3                  rf_key_para.cur_scan_times++; // 用于433遥控器按键扫描
+  87   3              }
+  88   2      
+  89   2              { // rf对码功能计时，从 上电后 到 RF_LEARN_TIMES期间，使能对码功能
+  90   3                  static u16 rf_learn_cnt = 0;
+  91   3      
+  92   3                  if (flag_is_rf_enable && flag_is_in_rf_learning)
+  93   3                  {
+  94   4                      rf_learn_cnt++;
+  95   4                      if (rf_learn_cnt >= RF_LEARN_TIMES)
+  96   4                      {
+  97   5                          rf_learn_cnt = 0;
+  98   5                          flag_is_in_rf_learning = 0;
+  99   5                      }
+ 100   4                  }
+ 101   3                  else
+ 102   3                  {
+ 103   4                      rf_learn_cnt = 0;
+ 104   4                  }
+ 105   3              }
+ 106   2      
+ 107   2              { // 风扇状态检测，累计一段时间后更新状态
+ 108   3                  static u16 fan_normal_cnt = 0;
+ 109   3                  static u16 fan_err_cnt = 0;
+C51 COMPILER V9.60.7.0   TIME0                                                             10/14/2025 18:17:19 PAGE 3   
+
+ 110   3      
+ 111   3                  if (flag_tim_scan_fan_is_err) // 如果检测到了风扇异常
+ 112   3                  {
+ 113   4                      fan_err_cnt++;
+ 114   4                      fan_normal_cnt = 0;
+ 115   4      
+ 116   4                      if (fan_err_cnt >= FAN_SCAN_TIMES_WHEN_ERR)
+ 117   4                      {
+ 118   5                          fan_err_cnt = 0;
+ 119   5                          cur_fan_status = FAN_STATUS_ERROR;
+ 120   5                      }
+ 121   4                  }
+ 122   3                  else
+ 123   3                  {
+ 124   4                      fan_normal_cnt++;
+ 125   4                      fan_err_cnt = 0;
+ 126   4      
+ 127   4                      if (fan_normal_cnt >= FAN_SCAN_TIMES_WHEN_NORMAL)
+ 128   4                      {
+ 129   5                          fan_normal_cnt = 0;
+ 130   5                          cur_fan_status = FAN_STATUS_NORMAL;
+ 131   5                      }
+ 132   4                  }
+ 133   3              } // 风扇状态检测，累计一段时间后更新状态
+ 134   2          }
+ 135   1      
+ 136   1          // 退出中断设置IP，不可删除
+ 137   1          __IRQnIPnPop(TMR0_IRQn);
+ 138   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    228    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      7    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

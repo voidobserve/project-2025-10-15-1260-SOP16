@@ -1,0 +1,353 @@
+C51 COMPILER V9.60.7.0   TIMER2                                                            10/14/2025 18:17:19 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIMER2
+OBJECT MODULE PLACED IN .\Release\Objects\timer2.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\timer2.c LARGE OPTIMIZE(9,SIZE) BROWSE INTVECTOR(0X000C) INCD
+                    -IR(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\timer2.lst) OBJECT(.\Rele
+                    -ase\Objects\timer2.obj)
+
+line level    source
+
+   1          #include "timer2.h"
+   2          #define TIMER2_PEROID_VAL (SYSCLK / 128 / 10000 - 1) // 周期值=系统时钟/分频/频率 - 1
+   3          
+   4          extern volatile bit flag_is_in_power_on; // 是否处于开机缓启动
+   5          
+   6          static volatile u16 pwm_duty_add_cnt; // 用于控制pwm增加的时间计数
+   7          static volatile u16 pwm_duty_sub_cnt; // 用于控制pwm递减的时间计数
+   8          
+   9          volatile bit flag_is_pwm_add_time_comes = 0; // 标志位，pwm占空比递增时间到来
+  10          volatile bit flag_is_pwm_sub_time_comes = 0; // 标志位，pwm占空比递减时间到来
+  11          
+  12          static volatile u16 pwm_duty_change_cnt = 0; // 用于控制pwm变化的时间计数（用在旋钮调节�
+             -��PWM占空比中）
+  13          
+  14          void timer2_config(void)
+  15          {
+  16   1          __EnableIRQ(TMR2_IRQn); // 使能timer2中断
+  17   1          IE_EA = 1;              // 使能总中断
+  18   1      
+  19   1          // 设置timer2的计数功能，配置一个频率为1kHz的中断
+  20   1          TMR_ALLCON = TMR2_CNT_CLR(0x1);                               // 清除计数值
+  21   1          TMR2_PRH = TMR_PERIOD_VAL_H((TIMER2_PEROID_VAL >> 8) & 0xFF); // 周期值
+  22   1          TMR2_PRL = TMR_PERIOD_VAL_L((TIMER2_PEROID_VAL >> 0) & 0xFF);
+  23   1          TMR2_CONH = TMR_PRD_PND(0x1) | TMR_PRD_IRQ_EN(0x1);                          // 计数等于周期时�
+             -��许发生中断
+  24   1          TMR2_CONL = TMR_SOURCE_SEL(0x7) | TMR_PRESCALE_SEL(0x7) | TMR_MODE_SEL(0x1); // 选择系统时钟，1
+             -28分频，计数模式
+  25   1      }
+  26          
+  27          // 定时器 中断服务函数
+  28          void TIMR2_IRQHandler(void) interrupt TMR2_IRQn
+  29          {
+  30   1          // 进入中断设置IP，不可删除
+  31   1          __IRQnIPnPush(TMR2_IRQn);
+  32   1      
+  33   1          // ---------------- 用户函数处理 -------------------
+  34   1      
+  35   1          // 周期中断
+  36   1          if (TMR2_CONH & TMR_PRD_PND(0x1)) // 约100us触发一次中断
+  37   1          {
+  38   2              TMR2_CONH |= TMR_PRD_PND(0x1); // 清除pending
+  39   2      
+  40   2              // tmr2_cnt++;
+  41   2              // P13 = ~P13; // 测试中断触发周期
+  42   2      
+  43   2              pwm_duty_add_cnt++;
+  44   2              pwm_duty_sub_cnt++;
+  45   2              pwm_duty_change_cnt++;
+  46   2      
+  47   2              if (pwm_duty_sub_cnt >= 13) // 1300us，1.3ms
+  48   2              // if (pwm_duty_sub_cnt >= 50)
+  49   2              {
+  50   3                  pwm_duty_sub_cnt = 0;
+C51 COMPILER V9.60.7.0   TIMER2                                                            10/14/2025 18:17:19 PAGE 2   
+
+  51   3                  flag_is_pwm_sub_time_comes = 1;
+  52   3              }
+  53   2      
+  54   2              // if (pwm_duty_add_cnt >= 133) // 13300us, 13.3ms
+  55   2              if (pwm_duty_add_cnt >= 13) //
+  56   2              {
+  57   3                  pwm_duty_add_cnt = 0;
+  58   3                  flag_is_pwm_add_time_comes = 1;
+  59   3              }
+  60   2      
+  61   2      #if 1 // rf信号接收 （100us调用一次）
+  62   2              {
+  63   3                  static volatile u8 rf_bit_cnt;            // RF信号接收的数据位计数值
+  64   3                  static volatile u32 __rf_data;            // 定时器中断使用的接收缓冲区，避免�
+             -��接覆盖全局的数据接收缓冲区
+  65   3                  static volatile u8 flag_is_enable_recv;   // 是否使能接收的标志位，要接收到 5ms
+             -+ 的低电平才开始接收
+  66   3                  static volatile u8 __flag_is_recved_data; // 表示中断服务函数接收到了rf数据
+  67   3      
+  68   3                  static volatile u8 low_level_cnt;  // RF信号低电平计数值
+  69   3                  static volatile u8 high_level_cnt; // RF信号高电平计数值
+  70   3      
+  71   3                  // 在定时器 中扫描端口电平
+  72   3                  if (0 == RFIN_PIN)
+  73   3                  {
+  74   4                      // 如果RF接收引脚为低电平，记录低电平的持续时间
+  75   4                      low_level_cnt++;
+  76   4      
+  77   4                      /*
+  78   4                          下面的判断条件是避免部分遥控器或接收模块只发送24位数据，最
+             -后不拉高电平的情况
+  79   4                      */
+  80   4                      if (low_level_cnt >= 30 && rf_bit_cnt == 23) // 如果低电平大于3000us，并且已经
+             -接收了23位数据
+  81   4                      {
+  82   5                          if (high_level_cnt >= 6 && high_level_cnt < 20)
+  83   5                          {
+  84   6                              __rf_data |= 0x01;
+  85   6                          }
+  86   5                          else if (high_level_cnt >= 1 && high_level_cnt < 6)
+  87   5                          {
+  88   6                          }
+  89   5      
+  90   5                          __flag_is_recved_data = 1; // 接收完成标志位置一
+  91   5                          flag_is_enable_recv = 0;
+  92   5                      }
+  93   4                  }
+  94   3                  else
+  95   3                  {
+  96   4                      if (low_level_cnt > 0)
+  97   4                      {
+  98   5                          // 如果之前接收到了低电平信号，现在遇到了高电平，判断是否�
+             -�收完成了一位数据
+  99   5                          if (low_level_cnt > 50)
+ 100   5                          {
+ 101   6                              // 如果低电平持续时间大于50 * 100us（5ms），准备下一次再读取
+             -有效信号
+ 102   6                              __rf_data = 0;  // 清除接收的数据帧
+ 103   6                              rf_bit_cnt = 0; // 清除用来记录接收的数据位数
+ 104   6      
+ 105   6                              flag_is_enable_recv = 1;
+ 106   6                          }
+C51 COMPILER V9.60.7.0   TIMER2                                                            10/14/2025 18:17:19 PAGE 3   
+
+ 107   5                          else if (flag_is_enable_recv &&
+ 108   5                                   low_level_cnt >= 2 && low_level_cnt < 7 &&
+ 109   5                                   high_level_cnt >= 6 && high_level_cnt < 20)
+ 110   5                          {
+ 111   6                              // 如果低电平持续时间在360us左右，高电平持续时间在760us左右
+             -，说明接收到了1
+ 112   6                              __rf_data |= 0x01;
+ 113   6                              rf_bit_cnt++;
+ 114   6                              if (rf_bit_cnt != 24)
+ 115   6                              {
+ 116   7                                  __rf_data <<= 1; // 用于存放接收24位数据的变量左移一位
+ 117   7                              }
+ 118   6                          }
+ 119   5                          else if (flag_is_enable_recv &&
+ 120   5                                   low_level_cnt >= 7 && low_level_cnt < 20 &&
+ 121   5                                   high_level_cnt >= 1 && high_level_cnt < 6)
+ 122   5                          {
+ 123   6                              // 如果低电平持续时间在840us左右，高电平持续时间在360us左右
+             -，说明接收到了0
+ 124   6                              __rf_data &= ~1;
+ 125   6                              rf_bit_cnt++;
+ 126   6                              if (rf_bit_cnt != 24)
+ 127   6                              {
+ 128   7                                  __rf_data <<= 1; // 用于存放接收24位数据的变量左移一位
+ 129   7                              }
+ 130   6                          }
+ 131   5                          else
+ 132   5                          {
+ 133   6                              // 如果低电平持续时间不符合0和1的判断条件，说明此时没有�
+             -�收到信号
+ 134   6                              __rf_data = 0;
+ 135   6                              rf_bit_cnt = 0;
+ 136   6                              flag_is_enable_recv = 0;
+ 137   6                          }
+ 138   5      
+ 139   5                          low_level_cnt = 0; // 无论是否接收到一位数据，遇到高电平时，先清�
+             -��之前的计数值
+ 140   5                          high_level_cnt = 0;
+ 141   5      
+ 142   5                          if (24 == rf_bit_cnt)
+ 143   5                          {
+ 144   6                              // 如果接收成了24位的数据
+ 145   6                              __flag_is_recved_data = 1; // 接收完成标志位置一
+ 146   6                              flag_is_enable_recv = 0;
+ 147   6                          }
+ 148   5                      }
+ 149   4                      else
+ 150   4                      {
+ 151   5                          // 如果接收到高电平后，低电平的计数为0
+ 152   5      
+ 153   5                          if (0 == flag_is_enable_recv)
+ 154   5                          {
+ 155   6                              __rf_data = 0;
+ 156   6                              rf_bit_cnt = 0;
+ 157   6                              flag_is_enable_recv = 0;
+ 158   6                          }
+ 159   5                      }
+ 160   4      
+ 161   4                      // 如果RF接收引脚为高电平，记录高电平的持续时间
+ 162   4                      high_level_cnt++;
+ 163   4                  }
+ 164   3      
+C51 COMPILER V9.60.7.0   TIMER2                                                            10/14/2025 18:17:19 PAGE 4   
+
+ 165   3                  if (__flag_is_recved_data) //
+ 166   3                  {
+ 167   4                      rf_bit_cnt = 0;
+ 168   4                      __flag_is_recved_data = 0;
+ 169   4                      low_level_cnt = 0;
+ 170   4                      high_level_cnt = 0;
+ 171   4      
+ 172   4                      // if (rf_data != 0)
+ 173   4                      // if (0 == flag_is_recved_rf_data) /* 如果之前未接收到数据 或是 已经处理�
+             -��上一次接收到的数据 */
+ 174   4                      {
+ 175   5                          // 现在改为只要收到新的数据，就覆盖rf_data
+ 176   5                          rf_data = __rf_data;
+ 177   5                          flag_is_recved_rf_data = 1;
+ 178   5                      }
+ 179   4                      // else
+ 180   4                      // {
+ 181   4                      //     __rf_data = 0;
+ 182   4                      // }
+ 183   4                  }
+ 184   3              }
+ 185   2      #endif // rf信号接收 （100us调用一次）
+ 186   2      
+ 187   2      #if 1                                 // 调节PWM占空比
+ 188   2                                            // if (pwm_duty_change_cnt >= 10) // 1000us,1ms
+ 189   2              // if (pwm_duty_change_cnt >= 1) // 100us（用遥控器调节，在50%以上调节pwm占空比的
+             -时候，灯光会有抖动）
+ 190   2              // if (pwm_duty_change_cnt >= 5) // 500us
+ 191   2              // if (pwm_duty_change_cnt >= 10) // x * 100us （用遥控器调节到50%以下pwm占空比的时
+             -候，灯光会有抖动）
+ 192   2              if (pwm_duty_change_cnt >= 20) // x * 100us （ 用遥控器调节时，灯光不会有抖动，�
+             -�机最高功率为870W--加上风扇）
+ 193   2              // if (pwm_duty_change_cnt >= 30) // x * 100us （用遥控器调节时，灯光不会有抖动，
+             -但是调节时间过长，感觉不跟手）
+ 194   2              {
+ 195   3      
+ 196   3                  pwm_duty_change_cnt = 0;
+ 197   3      
+ 198   3                  if (0 == flag_is_in_power_on) // 不处于开机缓启动，才使能PWM占空比调节
+ 199   3                  {
+ 200   4      #if 0
+                              if (flag_is_pwm_channel_0_enable) // 如果 pwm_channel_0 使能，才调节它的占空�
+             -�
+                              {
+                                  if (limited_adjust_pwm_duty > c_duty)
+                                  {
+                                      c_duty++;
+                                  }
+                                  else if (limited_adjust_pwm_duty < c_duty)
+                                  {
+                                      c_duty--;
+                                  }
+                                  else // 如果相等
+                                  {
+                                  }
+              
+                                  set_pwm_duty(); // 函数内部会将 c_duty 的值代入相关寄存器中
+                                  // set_p15_pwm_duty(c_duty);
+              
+                                  // if (c_duty <= KNOB_DIMMING_MIN_ADC_VAL) // 小于某个值，直接输出0%占空�
+             -�，关闭PWM输出，引脚配置为输出模式(尽量小于等于2%的占空比再灭灯)
+                                  if (c_duty <= 0) // 小于某个值，直接输出0%占空比，关闭PWM输出，引�
+C51 COMPILER V9.60.7.0   TIMER2                                                            10/14/2025 18:17:19 PAGE 5   
+
+             -��配置为输出模式(尽量小于等于2%的占空比再灭灯)
+                                  {
+                                      // 直接输出0%的占空比，可能会有些跳动，需要将对应的引脚�
+             -�置回输出模式，输出低电平
+                                      STMR_PWMEN &= ~0x01;          // 不使能PWM0的输出
+                                      FOUT_S16 = GPIO_FOUT_AF_FUNC; //
+                                      P16 = 1;                      // 高电平为关灯
+                                  }
+                                  // else if (c_duty >= KNOB_DIMMING_MIN_ADC_VAL) // 大于某个值，再打开PWM，�
+             -�脚配置回PWM
+                                  else if (c_duty >= 0) // 大于某个值，再打开PWM，引脚配置回PWM
+                                  {
+                                      FOUT_S16 = GPIO_FOUT_STMR0_PWMOUT; // stmr0_pwmout
+                                      STMR_PWMEN |= 0x01;                // 使能PWM0的输出
+                                  }
+                              }
+              #endif
+ 234   4                      // =================================================================
+ 235   4                      // pwm_channel_0                                               //
+ 236   4                      // =================================================================
+ 237   4                      if (adjust_pwm_channel_0_duty > cur_pwm_channel_0_duty)
+ 238   4                      {
+ 239   5                          cur_pwm_channel_0_duty++;
+ 240   5                      }
+ 241   4                      else if (adjust_pwm_channel_0_duty < cur_pwm_channel_0_duty)
+ 242   4                      {
+ 243   5                          cur_pwm_channel_0_duty--;
+ 244   5                      }
+ 245   4      
+ 246   4                      // =================================================================
+ 247   4                      // pwm_channel_1                                               //
+ 248   4                      // =================================================================
+ 249   4                      if (adjust_pwm_channel_1_duty > cur_pwm_channel_1_duty)
+ 250   4                      {
+ 251   5                          cur_pwm_channel_1_duty++;
+ 252   5                      }
+ 253   4                      else if (adjust_pwm_channel_1_duty < cur_pwm_channel_1_duty)
+ 254   4                      {
+ 255   5                          cur_pwm_channel_1_duty--;
+ 256   5                      }
+ 257   4      
+ 258   4                      set_pwm_channel_0_duty(cur_pwm_channel_0_duty);
+ 259   4                      set_pwm_channel_1_duty(cur_pwm_channel_1_duty);
+ 260   4      
+ 261   4                      if (cur_pwm_channel_0_duty <= 0)
+ 262   4                      {
+ 263   5                          // 小于某个值，直接输出0%占空比，关闭PWM输出，引脚配置为输出
+             -模式
+ 264   5                          pwm_channel_0_disable();
+ 265   5                      }
+ 266   4                      else // 如果大于0
+ 267   4                      {
+ 268   5                          pwm_channel_0_enable();
+ 269   5                      }
+ 270   4      
+ 271   4                      if (cur_pwm_channel_1_duty <= 0)
+ 272   4                      {
+ 273   5                          // 小于某个值，直接输出0%占空比，关闭PWM输出，引脚配置为输出
+             -模式
+ 274   5                          pwm_channel_1_disable();
+ 275   5                      }
+ 276   4                      else // 如果大于0
+C51 COMPILER V9.60.7.0   TIMER2                                                            10/14/2025 18:17:19 PAGE 6   
+
+ 277   4                      {
+ 278   5                          pwm_channel_1_enable();
+ 279   5                      }
+ 280   4      
+ 281   4                  } // if (0 == flag_is_in_power_on) // 不处于开机缓启动，才使能PWM占空比调节
+ 282   3      
+ 283   3      #if 0
+                          // printf("c_duty %u\n", c_duty);
+                          // printf(",c=%u\n", c_duty);
+              #endif
+ 287   3              }
+ 288   2      #endif // 调节PWM占空比
+ 289   2          }
+ 290   1      
+ 291   1          // 退出中断设置IP，不可删除
+ 292   1          __IRQnIPnPop(TMR2_IRQn);
+ 293   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    714    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     15    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

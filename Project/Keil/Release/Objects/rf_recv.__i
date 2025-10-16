@@ -1,0 +1,1 @@
+"..\..\User\rf_recv.c" LARGE OPTIMIZE (9,SIZE) BROWSE INTVECTOR(0x000C) INCDIR(..\..\Libraries\Include;..\..\User) interval(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\rf_recv.lst) OBJECT(.\Release\Objects\rf_recv.obj)
