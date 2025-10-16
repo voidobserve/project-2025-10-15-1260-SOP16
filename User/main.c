@@ -234,7 +234,10 @@ void main(void)
         temperature_scan();                // 检测热敏电阻一端的电压值
         fan_scan();                        // 检测风扇的状态是否异常，并根据结果来限制pwm占空比
         set_duty();                        // 设定到要调节到的脉宽 (设置adjust_duty)
-        according_pin9_to_adjust_pin16();  // 根据9脚的电压来设定16脚的电平
+        // according_pin9_to_adjust_pin16();  // 根据9脚的电压来设定16脚的电平
+        {
+            P14 = 0;
+        }
 
 #if USE_MY_DEBUG
         // printf("adjust_duty %u\n", adjust_duty);
@@ -247,7 +250,6 @@ void main(void)
         // if (flag_is_recved_rf_data)
         // {
         //     flag_is_recved_rf_data = 0;
-
         //     printf("recv data: 0x %lx\n", rf_data);
         // }
 
@@ -275,12 +277,14 @@ void main(void)
         //     if (cnt >= 100)
         //     {
         //         cnt = 0;
-        //         printf("expect_adjust_pwm_channel_0_duty: %u\n", expect_adjust_pwm_channel_0_duty);
-        //         printf("expect_adjust_pwm_channel_1_duty: %u\n", expect_adjust_pwm_channel_1_duty);
-        //         printf("adjust_pwm_channel_0_duty: %u\n", adjust_pwm_channel_0_duty);
-        //         printf("adjust_pwm_channel_1_duty: %u\n", adjust_pwm_channel_1_duty);
-        //         printf("cur_pwm_channel_0_duty: %u\n", cur_pwm_channel_0_duty);
-        //         printf("cur_pwm_channel_1_duty: %u\n", cur_pwm_channel_1_duty);
+        //         // printf("expect_adjust_pwm_channel_0_duty: %u\n", expect_adjust_pwm_channel_0_duty);
+        //         // printf("expect_adjust_pwm_channel_1_duty: %u\n", expect_adjust_pwm_channel_1_duty);
+        //         // printf("adjust_pwm_channel_0_duty: %u\n", adjust_pwm_channel_0_duty);
+        //         // printf("adjust_pwm_channel_1_duty: %u\n", adjust_pwm_channel_1_duty);
+        //         // printf("cur_pwm_channel_0_duty: %u\n", cur_pwm_channel_0_duty);
+        //         // printf("cur_pwm_channel_1_duty: %u\n", cur_pwm_channel_1_duty);
+
+        //         printf("__LINE__ %u\n", __LINE__);
         //     }
         // }
 

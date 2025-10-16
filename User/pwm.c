@@ -94,8 +94,8 @@ static u16 t_adc_min = 4096; // 存放一段时间内采集到的最小ad值
 static u8 over_drive_status = 0;
 #define OVER_DRIVE_RESTART_TIME (30)
 
-// static volatile u16 filter_buff_2[270] = {0}; // 用于滤波的数组 (对应 5.83ms 执行一次的函数 according_pin9_to_adjust_pwm )
-static volatile u16 filter_buff_2[540] = {0}; // 用于滤波的数组 (对应 2.93ms 执行一次的函数 according_pin9_to_adjust_pwm，时间越短，数组需要加大)
+static volatile u16 filter_buff_2[270] = {0}; // 用于滤波的数组 (对应 5.83ms 执行一次的函数 according_pin9_to_adjust_pwm )
+// static volatile u16 filter_buff_2[540] = {0}; // 用于滤波的数组 (对应 2.93ms 执行一次的函数 according_pin9_to_adjust_pwm，时间越短，数组需要加大)
 static volatile u16 buff_index_2 = 0;         // 用于滤波的数组下标
 
 /*
@@ -126,8 +126,10 @@ void according_pin9_to_adjust_pwm(void)
         {
             filter_buff[i] = adc_val_pin_9;
         }
+
         // for (i = 0; i < 270; i++)
-        for (i = 0; i < 540; i++)
+        // for (i = 0; i < 540; i++)
+        for (i = 0; i < ARRAY_SIZE(filter_buff_2); i++)
         {
             filter_buff_2[i] = adc_val_pin_9;
         }
@@ -160,7 +162,8 @@ void according_pin9_to_adjust_pwm(void)
     filter_buff_2[buff_index_2] = adc_pin_9_avg;
     buff_index_2++;
     // if (buff_index_2 >= 270)
-    if (buff_index_2 >= 540)
+    // if (buff_index_2 >= 540)
+    if (buff_index_2 >= ARRAY_SIZE(filter_buff_2))
     {
         buff_index_2 = 0;
     }
@@ -174,7 +177,8 @@ void according_pin9_to_adjust_pwm(void)
         t_adc_max = 0;
         t_adc_min = 4096;
         // for (; i < 270; i++)
-        for (; i < 540; i++)
+        // for (; i < 540; i++)
+        for (; i < ARRAY_SIZE(filter_buff_2); i++)
         {
             if (filter_buff_2[i] > t_adc_max)
                 t_adc_max = filter_buff_2[i];

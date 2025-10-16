@@ -115,9 +115,10 @@ void adc_sel_pin(const u8 adc_sel)
 
     ADC_CFG0 |= ADC_CHAN0_EN(0x1) | // 使能通道0转换
                 ADC_EN(0x1);        // 使能A/D转换
-    delay_ms(1);                    // 等待ADC稳定
+    // delay_ms(1);                    // 等待ADC稳定
+    // 官方的demo中提到等待20us以上
+    delay((u32)1450 / 2);
 }
- 
 
 // adc单次采集+转换（没有滤波）
 u16 adc_get_val_single(void)
@@ -125,9 +126,9 @@ u16 adc_get_val_single(void)
     u16 adc_val = 0;
     ADC_CFG0 |= ADC_CHAN0_TRG(0x1); // 触发ADC0转换
     while (!(ADC_STA & ADC_CHAN0_DONE(0x1)))
-        ;                                             // 等待转换完成
-    adc_val = (ADC_DATAH0 << 4) | (ADC_DATAL0 >> 4);  // 读取channel0的值
-    ADC_STA = ADC_CHAN0_DONE(0x1);                    // 清除ADC0转换完成标志位
+        ;                                            // 等待转换完成
+    adc_val = (ADC_DATAH0 << 4) | (ADC_DATAL0 >> 4); // 读取channel0的值
+    ADC_STA = ADC_CHAN0_DONE(0x1);                   // 清除ADC0转换完成标志位
     return adc_val;
 }
 
@@ -171,7 +172,8 @@ u32 get_voltage_from_pin(void)
 {
     volatile u32 adc_aver_val = 0; // 存放adc滤波后的值
     // 采集热敏电阻的电压
-    adc_aver_val = adc_get_val();
+    // adc_aver_val = adc_get_val();
+    adc_aver_val = adc_get_val_single();
 
     // 4095（adc转换后，可能出现的最大的值） * 0.0012 == 4.914，约等于5V（VCC）
     return adc_aver_val * 12 / 10; // 假设是4095，4095 * 12/10 == 4915mV
@@ -182,8 +184,6 @@ void temperature_scan(void)
 {
     volatile u32 voltage = 0; // 存放adc采集到的电压，单位：mV
 
-    // 如果已经超过75摄氏度且超过30min，不用再检测8脚的电压，等待用户排查原因，再重启（重新上电）
-    // if (TEMP_75_30MIN == temp_status)
     // 如果已经超过75摄氏度且超过5min，不用再检测8脚的电压，等待用户排查原因，再重启（重新上电）
     if (TEMP_75_5_MIN == temp_status)
     {
@@ -205,43 +205,58 @@ void temperature_scan(void)
     {
         // 如果检测到温度大于75摄氏度（测得的电压值要小于75摄氏度对应的电压值）
 
-        {
-            // 检测10次，如果10次都小于这个电压值，才说明温度真的大于75摄氏度
-            u8 i = 0;
-            for (i = 0; i < 10; i++)
-            {
-                voltage = get_voltage_from_pin(); // 采集热敏电阻上的电压
-                if (voltage > VOLTAGE_TEMP_75)
-                {
-                    // 只要有一次温度小于75摄氏度，就认为温度没有大于75摄氏度
-                    temp_status = TEMP_NORMAL;
-                    return;
-                }
-            }
+// 检测10次，如果10次都小于这个电压值，才说明温度真的大于75摄氏度
+#if 0 // OLD
 
-            // 如果运行到这里，说明温度确实大于75摄氏度
+        u8 i = 0;
+        for (i = 0; i < 10; i++)
+        {
+            voltage = get_voltage_from_pin(); // 采集热敏电阻上的电压
+            if (voltage > VOLTAGE_TEMP_75)
+            {
+                // 只要有一次温度小于75摄氏度，就认为温度没有大于75摄氏度
+                temp_status = TEMP_NORMAL;
+                return;
+            }
+        }
+
+        // 如果运行到这里，说明温度确实大于75摄氏度
+
 #if USE_MY_DEBUG
 // printf("温度超过了75摄氏度\n");
 // printf("此时采集到的电压值：%lu mV", voltage);
 #endif
-            temp_status = TEMP_75; // 状态标志设置为超过75摄氏度
-            return;                // 函数返回，让调节占空比的函数先进行调节
+
+        temp_status = TEMP_75; // 状态标志设置为超过75摄氏度
+        return; // 函数返回，让调节占空比的函数先进行调节
+
+#endif // OLD
+
+#if 1 // NEW
+
+        static volatile u8 cnt = 0;
+        if (voltage > VOLTAGE_TEMP_75)
+        {
+            cnt++;
+        }
+        else
+        {
+            cnt = 0;
         }
 
-        // static u8 flag_adc_filter = 0;
-        // flag_adc_filter <<= 1;
-        // if (voltage > VOLTAGE_TEMP_75) // 电压值大于75度对应的电压，说明温度小于75度
-        // {
-        //     flag_adc_filter = 0;
-        // }
-        // else
-        // {
-        //     flag_adc_filter |= 1;
-        // }
+        if (cnt >= 10)
+        {
+            cnt = 0;
+            temp_status = TEMP_75; // 状态标志设置为超过75摄氏度
+        }
+        else
+        {
+            temp_status = TEMP_NORMAL;
+        }
 
-        // if (flag_adc_filter == 0xFF)
-        // {
-        // }
+        return; // 函数返回，让调节占空比的函数先进行调节
+
+#endif // NEW
     }
     else if (temp_status == TEMP_75)
     {
@@ -255,28 +270,11 @@ void temperature_scan(void)
             tmr1_enable(); // 打开定时器，开始记录是否大于75摄氏度且超过30min
         }
 
-        // while (1) // 这个while循环会影响到9脚调节16脚电压的功能
-        // {
-#if 0 // 这里的代码在客户那边反而出现问题，超过90摄氏度且1个小时都没有将PWM降到25%，
-      // 可能是用户那边的电压有跳变，导致这里清空了定时器计数
-            if (voltage > VOLTAGE_TEMP_75)
-            {
-                // 只要有一次温度小于75摄氏度，就认为温度没有大于75摄氏度
-                temp_status = TEMP_75; // 温度标记为超过75摄氏度，但是没有累计30min
-                tmr1_disable();        // 关闭定时器
-                tmr1_cnt = 0;          // 清空时间计数值
-#if USE_MY_DEBUG
-                // printf("在温度超过了75摄氏度时，检测到有一次温度没有超过75摄氏度\n");
-                // printf("此时采集到的电压值：%lu mV\n", voltage);
-#endif
-                return;
-            }
-#endif
-        // 如果超过75摄氏度并且过了30min，再检测温度是否超过75摄氏度
-        // if (tmr1_cnt >= (u32)TMR1_CNT_30_MINUTES)
         // 如果超过75摄氏度并且过了5min，再检测温度是否超过75摄氏度
         if (tmr1_cnt >= (u32)TMR1_CNT_5_MINUTES)
         {
+
+#if 0 // OLD            
             u8 i = 0;
 #if USE_MY_DEBUG
             // printf("温度超过了75摄氏度且超过了30min\n");
@@ -294,15 +292,43 @@ void temperature_scan(void)
                 }
             }
 
-            // 如果运行到这里，说明上面连续、多次检测到的温度都大于75摄氏度
-            // temp_status = TEMP_75_30MIN;
+            // 如果运行到这里，说明上面连续、多次检测到的温度都大于75摄氏度 
             temp_status = TEMP_75_5_MIN;
             tmr1_disable(); // 关闭定时器
             tmr1_cnt = 0;   // 清空时间计数值
             tmr1_is_open = 0;
             return;
+#endif // OLD
+
+#if 1 // NEW
+
+            static volatile u8 cnt = 0;
+
+            if (voltage > VOLTAGE_TEMP_75)
+            {
+                cnt++;
+            }
+            else
+            {
+                cnt = 0;
+            }
+
+            if (cnt >= 10)
+            {
+                cnt = 0;
+                temp_status = TEMP_75_5_MIN; // 状态标志设置为超过75摄氏度且超过5min
+                tmr1_disable();              // 关闭定时器
+                tmr1_cnt = 0;                // 清空时间计数值
+                tmr1_is_open = 0;
+            }
+            else
+            {
+                temp_status = TEMP_75;
+            }
+
+            return;
+#endif // NEW
         }
-        // }  // while(1)
     }
 }
 
@@ -344,10 +370,11 @@ void adc_update_pin_9_adc_val(void)
 }
 
 void fan_scan(void)
-{  
+{
     u16 adc_val = 0;
     adc_sel_pin(ADC_SEL_PIN_FAN_DETECT);
-    adc_val = adc_get_val();
+    // adc_val = adc_get_val();
+    adc_val = adc_get_val_single();
 
     // {
     //     static u16 cnt = 0;

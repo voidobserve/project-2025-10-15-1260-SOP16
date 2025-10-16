@@ -479,9 +479,9 @@ void rf_key_handle(void)
                         flash_program(FLASH_START_ADDR, (u8 *)&rf_remote_info, sizeof(rf_remote_info));
 
 #if USE_MY_DEBUG
-                        printf("rf learn\n");
-                        printf("rf_remote_type %bu\n", rf_remote_info.rf_remote_type);
-                        printf("learn addr: 0x %lx\n", rf_remote_info.rf_addr);
+                        // printf("rf learn\n");
+                        // printf("rf_remote_type %bu\n", rf_remote_info.rf_remote_type);
+                        // printf("learn addr: 0x %lx\n", rf_remote_info.rf_addr);
 #endif
                         flag_is_in_rf_learning = 2; // 对码完成后，等待按键松手
                     }

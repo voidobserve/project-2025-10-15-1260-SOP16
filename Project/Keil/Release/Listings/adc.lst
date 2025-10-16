@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   ADC                                                               10/14/2025 18:17:19 PAGE 1   
+C51 COMPILER V9.60.7.0   ADC                                                               10/16/2025 09:07:20 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE ADC
@@ -62,7 +62,7 @@ line level    source
   49   1          last_adc_sel = adc_sel;
   50   1      
   51   1          ADC_CFG1 |= (0x0F << 3); // ADC时钟分频为16分频，为系统时钟/16
-C51 COMPILER V9.60.7.0   ADC                                                               10/14/2025 18:17:19 PAGE 2   
+C51 COMPILER V9.60.7.0   ADC                                                               10/16/2025 09:07:20 PAGE 2   
 
   52   1          ADC_CFG2 = 0xFF;         // 通道0采样时间配置为256个采样时钟周期
   53   1      
@@ -126,7 +126,7 @@ line level    source
  104   2              ADC_ACON1 |= ADC_VREF_SEL(0x6) |                                            // 选择内部参考�
              -��压VCCA
  105   2                           ADC_TEN_SEL(0x3);                                              // 关闭测试信号
-C51 COMPILER V9.60.7.0   ADC                                                               10/14/2025 18:17:19 PAGE 3   
+C51 COMPILER V9.60.7.0   ADC                                                               10/16/2025 09:07:20 PAGE 3   
 
  106   2              ADC_ACON0 = ADC_CMP_EN(0x1) |                                               // 打开ADC中的CMP�
              -��能信号
@@ -142,78 +142,77 @@ line level    source
  115   1      
  116   1          ADC_CFG0 |= ADC_CHAN0_EN(0x1) | // 使能通道0转换
  117   1                      ADC_EN(0x1);        // 使能A/D转换
- 118   1          delay_ms(1);                    // 等待ADC稳定
- 119   1      }
- 120           
- 121          
- 122          // adc单次采集+转换（没有滤波）
- 123          u16 adc_get_val_single(void)
- 124          {
- 125   1          u16 adc_val = 0;
- 126   1          ADC_CFG0 |= ADC_CHAN0_TRG(0x1); // 触发ADC0转换
- 127   1          while (!(ADC_STA & ADC_CHAN0_DONE(0x1)))
- 128   1              ;                                             // 等待转换完成
- 129   1          adc_val = (ADC_DATAH0 << 4) | (ADC_DATAL0 >> 4);  // 读取channel0的值
- 130   1          ADC_STA = ADC_CHAN0_DONE(0x1);                    // 清除ADC0转换完成标志位
- 131   1          return adc_val;
- 132   1      }
- 133          
- 134          // 获取一次adc采集+滤波后的值
- 135          u16 adc_get_val(void)
- 136          {
- 137   1          u8 i = 0; // adc采集次数的计数
- 138   1          volatile u16 g_temp_value = 0;
- 139   1          volatile u32 g_tmpbuff = 0;
- 140   1          volatile u16 g_adcmax = 0;
- 141   1          volatile u16 g_adcmin = 0xFFFF;
- 142   1      
- 143   1          // 采集20次，去掉前两次采样，再去掉一个最大值和一个最小值，再取平均值
- 144   1          for (i = 0; i < 20; i++)
- 145   1          {
- 146   2              ADC_CFG0 |= ADC_CHAN0_TRG(0x1); // 触发ADC0转换
- 147   2              while (!(ADC_STA & ADC_CHAN0_DONE(0x1)))
- 148   2                  ;                                                 // 等待转换完成
- 149   2              g_temp_value = (ADC_DATAH0 << 4) | (ADC_DATAL0 >> 4); // 读取 channel0 的值
- 150   2              ADC_STA = ADC_CHAN0_DONE(0x1);                        // 清除ADC0转换完成标志位
- 151   2      
- 152   2              if (i < 2)
- 153   2                  continue; // 丢弃前两次采样的
- 154   2              if (g_temp_value > g_adcmax)
- 155   2                  g_adcmax = g_temp_value; // 最大
- 156   2              if (g_temp_value < g_adcmin)
- 157   2                  g_adcmin = g_temp_value; // 最小
- 158   2      
- 159   2              g_tmpbuff += g_temp_value;
- 160   2          }
- 161   1      
- 162   1          g_tmpbuff -= g_adcmax;           // 去掉一个最大
- 163   1          g_tmpbuff -= g_adcmin;           // 去掉一个最小
- 164   1          g_temp_value = (g_tmpbuff >> 4); // 除以16，取平均值
- 165   1      
-C51 COMPILER V9.60.7.0   ADC                                                               10/14/2025 18:17:19 PAGE 4   
+ 118   1          // delay_ms(1);                    // 等待ADC稳定
+ 119   1          // 官方的demo中提到等待20us以上
+ 120   1          delay((u32)1450 / 2);
+ 121   1      }
+ 122          
+ 123          // adc单次采集+转换（没有滤波）
+ 124          u16 adc_get_val_single(void)
+ 125          {
+ 126   1          u16 adc_val = 0;
+ 127   1          ADC_CFG0 |= ADC_CHAN0_TRG(0x1); // 触发ADC0转换
+ 128   1          while (!(ADC_STA & ADC_CHAN0_DONE(0x1)))
+ 129   1              ;                                            // 等待转换完成
+ 130   1          adc_val = (ADC_DATAH0 << 4) | (ADC_DATAL0 >> 4); // 读取channel0的值
+ 131   1          ADC_STA = ADC_CHAN0_DONE(0x1);                   // 清除ADC0转换完成标志位
+ 132   1          return adc_val;
+ 133   1      }
+ 134          
+ 135          // 获取一次adc采集+滤波后的值
+ 136          u16 adc_get_val(void)
+ 137          {
+ 138   1          u8 i = 0; // adc采集次数的计数
+ 139   1          volatile u16 g_temp_value = 0;
+ 140   1          volatile u32 g_tmpbuff = 0;
+ 141   1          volatile u16 g_adcmax = 0;
+ 142   1          volatile u16 g_adcmin = 0xFFFF;
+ 143   1      
+ 144   1          // 采集20次，去掉前两次采样，再去掉一个最大值和一个最小值，再取平均值
+ 145   1          for (i = 0; i < 20; i++)
+ 146   1          {
+ 147   2              ADC_CFG0 |= ADC_CHAN0_TRG(0x1); // 触发ADC0转换
+ 148   2              while (!(ADC_STA & ADC_CHAN0_DONE(0x1)))
+ 149   2                  ;                                                 // 等待转换完成
+ 150   2              g_temp_value = (ADC_DATAH0 << 4) | (ADC_DATAL0 >> 4); // 读取 channel0 的值
+ 151   2              ADC_STA = ADC_CHAN0_DONE(0x1);                        // 清除ADC0转换完成标志位
+ 152   2      
+ 153   2              if (i < 2)
+ 154   2                  continue; // 丢弃前两次采样的
+ 155   2              if (g_temp_value > g_adcmax)
+ 156   2                  g_adcmax = g_temp_value; // 最大
+ 157   2              if (g_temp_value < g_adcmin)
+ 158   2                  g_adcmin = g_temp_value; // 最小
+ 159   2      
+ 160   2              g_tmpbuff += g_temp_value;
+ 161   2          }
+ 162   1      
+ 163   1          g_tmpbuff -= g_adcmax;           // 去掉一个最大
+ 164   1          g_tmpbuff -= g_adcmin;           // 去掉一个最小
+ 165   1          g_temp_value = (g_tmpbuff >> 4); // 除以16，取平均值
+C51 COMPILER V9.60.7.0   ADC                                                               10/16/2025 09:07:20 PAGE 4   
 
- 166   1          return g_temp_value;
- 167   1      }
- 168          
- 169          // 从引脚上采集滤波后的电压值,函数内部会将采集到的ad转换成对应的电压值
- 170          u32 get_voltage_from_pin(void)
- 171          {
- 172   1          volatile u32 adc_aver_val = 0; // 存放adc滤波后的值
- 173   1          // 采集热敏电阻的电压
- 174   1          adc_aver_val = adc_get_val();
- 175   1      
- 176   1          // 4095（adc转换后，可能出现的最大的值） * 0.0012 == 4.914，约等于5V（VCC）
- 177   1          return adc_aver_val * 12 / 10; // 假设是4095，4095 * 12/10 == 4915mV
- 178   1      }
- 179          
- 180          // 温度检测功能
- 181          void temperature_scan(void)
- 182          {
- 183   1          volatile u32 voltage = 0; // 存放adc采集到的电压，单位：mV
- 184   1      
- 185   1          // 如果已经超过75摄氏度且超过30min，不用再检测8脚的电压，等待用户排查原�
-             -��，再重启（重新上电）
- 186   1          // if (TEMP_75_30MIN == temp_status)
+ 166   1      
+ 167   1          return g_temp_value;
+ 168   1      }
+ 169          
+ 170          // 从引脚上采集滤波后的电压值,函数内部会将采集到的ad转换成对应的电压值
+ 171          u32 get_voltage_from_pin(void)
+ 172          {
+ 173   1          volatile u32 adc_aver_val = 0; // 存放adc滤波后的值
+ 174   1          // 采集热敏电阻的电压
+ 175   1          // adc_aver_val = adc_get_val();
+ 176   1          adc_aver_val = adc_get_val_single();
+ 177   1      
+ 178   1          // 4095（adc转换后，可能出现的最大的值） * 0.0012 == 4.914，约等于5V（VCC）
+ 179   1          return adc_aver_val * 12 / 10; // 假设是4095，4095 * 12/10 == 4915mV
+ 180   1      }
+ 181          
+ 182          // 温度检测功能
+ 183          void temperature_scan(void)
+ 184          {
+ 185   1          volatile u32 voltage = 0; // 存放adc采集到的电压，单位：mV
+ 186   1      
  187   1          // 如果已经超过75摄氏度且超过5min，不用再检测8脚的电压，等待用户排查原�
              -�，再重启（重新上电）
  188   1          if (TEMP_75_5_MIN == temp_status)
@@ -237,217 +236,242 @@ line level    source
  206   2              // 如果检测到温度大于75摄氏度（测得的电压值要小于75摄氏度对应的电压�
              -��）
  207   2      
- 208   2              {
- 209   3                  // 检测10次，如果10次都小于这个电压值，才说明温度真的大于75摄氏度
- 210   3                  u8 i = 0;
- 211   3                  for (i = 0; i < 10; i++)
- 212   3                  {
- 213   4                      voltage = get_voltage_from_pin(); // 采集热敏电阻上的电压
- 214   4                      if (voltage > VOLTAGE_TEMP_75)
- 215   4                      {
- 216   5                          // 只要有一次温度小于75摄氏度，就认为温度没有大于75摄氏度
- 217   5                          temp_status = TEMP_NORMAL;
- 218   5                          return;
- 219   5                      }
- 220   4                  }
- 221   3      
- 222   3                  // 如果运行到这里，说明温度确实大于75摄氏度
- 223   3      #if USE_MY_DEBUG
-              // printf("温度超过了75摄氏度\n");
-C51 COMPILER V9.60.7.0   ADC                                                               10/14/2025 18:17:19 PAGE 5   
-
-              // printf("此时采集到的电压值：%lu mV", voltage);
-              #endif
- 227   3                  temp_status = TEMP_75; // 状态标志设置为超过75摄氏度
- 228   3                  return;                // 函数返回，让调节占空比的函数先进行调节
- 229   3              }
- 230   2      
- 231   2              // static u8 flag_adc_filter = 0;
- 232   2              // flag_adc_filter <<= 1;
- 233   2              // if (voltage > VOLTAGE_TEMP_75) // 电压值大于75度对应的电压，说明温度小于75度
- 234   2              // {
- 235   2              //     flag_adc_filter = 0;
- 236   2              // }
- 237   2              // else
- 238   2              // {
- 239   2              //     flag_adc_filter |= 1;
- 240   2              // }
- 241   2      
- 242   2              // if (flag_adc_filter == 0xFF)
- 243   2              // {
- 244   2              // }
- 245   2          }
- 246   1          else if (temp_status == TEMP_75)
- 247   1          {
- 248   2              // 如果之前的温度超过75摄氏度
- 249   2              static bit tmr1_is_open = 0;
- 250   2      
- 251   2              if (0 == tmr1_is_open)
- 252   2              {
- 253   3                  tmr1_is_open = 1;
- 254   3                  tmr1_cnt = 0;
- 255   3                  tmr1_enable(); // 打开定时器，开始记录是否大于75摄氏度且超过30min
- 256   3              }
- 257   2      
- 258   2              // while (1) // 这个while循环会影响到9脚调节16脚电压的功能
- 259   2              // {
- 260   2      #if 0 // 这里的代码在客户那边反而出现问题，超过90摄氏度且1个小时都没有将PWM�
-             -��到25%，
-                    // 可能是用户那边的电压有跳变，导致这里清空了定时器计数
+ 208   2      // 检测10次，如果10次都小于这个电压值，才说明温度真的大于75摄氏度
+ 209   2      #if 0 // OLD
+              
+                      u8 i = 0;
+                      for (i = 0; i < 10; i++)
+                      {
+                          voltage = get_voltage_from_pin(); // 采集热敏电阻上的电压
                           if (voltage > VOLTAGE_TEMP_75)
                           {
                               // 只要有一次温度小于75摄氏度，就认为温度没有大于75摄氏度
-                              temp_status = TEMP_75; // 温度标记为超过75摄氏度，但是没有累计30min
-                              tmr1_disable();        // 关闭定时器
-                              tmr1_cnt = 0;          // 清空时间计数值
-              #if USE_MY_DEBUG
-                              // printf("在温度超过了75摄氏度时，检测到有一次温度没有超过75摄氏
-             -度\n");
-                              // printf("此时采集到的电压值：%lu mV\n", voltage);
-              #endif
+                              temp_status = TEMP_NORMAL;
                               return;
                           }
+                      }
+              
+                      // 如果运行到这里，说明温度确实大于75摄氏度
+              
+              #if USE_MY_DEBUG
+C51 COMPILER V9.60.7.0   ADC                                                               10/16/2025 09:07:20 PAGE 5   
+
+              // printf("温度超过了75摄氏度\n");
+              // printf("此时采集到的电压值：%lu mV", voltage);
               #endif
- 275   2              // 如果超过75摄氏度并且过了30min，再检测温度是否超过75摄氏度
- 276   2              // if (tmr1_cnt >= (u32)TMR1_CNT_30_MINUTES)
- 277   2              // 如果超过75摄氏度并且过了5min，再检测温度是否超过75摄氏度
- 278   2              if (tmr1_cnt >= (u32)TMR1_CNT_5_MINUTES)
- 279   2              {
- 280   3                  u8 i = 0;
- 281   3      #if USE_MY_DEBUG
+              
+                      temp_status = TEMP_75; // 状态标志设置为超过75摄氏度
+                      return; // 函数返回，让调节占空比的函数先进行调节
+              
+              #endif // OLD
+ 234   2      
+ 235   2      #if 1 // NEW
+ 236   2      
+ 237   2              static volatile u8 cnt = 0;
+ 238   2              if (voltage > VOLTAGE_TEMP_75)
+ 239   2              {
+ 240   3                  cnt++;
+ 241   3              }
+ 242   2              else
+ 243   2              {
+ 244   3                  cnt = 0;
+ 245   3              }
+ 246   2      
+ 247   2              if (cnt >= 10)
+ 248   2              {
+ 249   3                  cnt = 0;
+ 250   3                  temp_status = TEMP_75; // 状态标志设置为超过75摄氏度
+ 251   3              }
+ 252   2              else
+ 253   2              {
+ 254   3                  temp_status = TEMP_NORMAL;
+ 255   3              }
+ 256   2      
+ 257   2              return; // 函数返回，让调节占空比的函数先进行调节
+ 258   2      
+ 259   2      #endif // NEW
+ 260   2          }
+ 261   1          else if (temp_status == TEMP_75)
+ 262   1          {
+ 263   2              // 如果之前的温度超过75摄氏度
+ 264   2              static bit tmr1_is_open = 0;
+ 265   2      
+ 266   2              if (0 == tmr1_is_open)
+ 267   2              {
+ 268   3                  tmr1_is_open = 1;
+ 269   3                  tmr1_cnt = 0;
+ 270   3                  tmr1_enable(); // 打开定时器，开始记录是否大于75摄氏度且超过30min
+ 271   3              }
+ 272   2      
+ 273   2              // 如果超过75摄氏度并且过了5min，再检测温度是否超过75摄氏度
+ 274   2              if (tmr1_cnt >= (u32)TMR1_CNT_5_MINUTES)
+ 275   2              {
+ 276   3      
+ 277   3      #if 0 // OLD            
+                          u8 i = 0;
+              #if USE_MY_DEBUG
                           // printf("温度超过了75摄氏度且超过了30min\n");
                           // printf("此时采集到的电压值：%lu mV\n", voltage);
               #endif
-C51 COMPILER V9.60.7.0   ADC                                                               10/14/2025 18:17:19 PAGE 6   
+              
+                          for (i = 0; i < 10; i++)
+                          {
+                              voltage = get_voltage_from_pin(); // 采集热敏电阻上的电压
+                              if (voltage > VOLTAGE_TEMP_75)
+C51 COMPILER V9.60.7.0   ADC                                                               10/16/2025 09:07:20 PAGE 6   
 
- 285   3      
- 286   3                  for (i = 0; i < 10; i++)
- 287   3                  {
- 288   4                      voltage = get_voltage_from_pin(); // 采集热敏电阻上的电压
- 289   4                      if (voltage > VOLTAGE_TEMP_75)
- 290   4                      {
- 291   5                          // 只要有一次温度小于75摄氏度，就认为温度没有大于75摄氏度
- 292   5                          temp_status = TEMP_75;
- 293   5                          return;
- 294   5                      }
- 295   4                  }
- 296   3      
- 297   3                  // 如果运行到这里，说明上面连续、多次检测到的温度都大于75摄氏度
- 298   3                  // temp_status = TEMP_75_30MIN;
- 299   3                  temp_status = TEMP_75_5_MIN;
- 300   3                  tmr1_disable(); // 关闭定时器
- 301   3                  tmr1_cnt = 0;   // 清空时间计数值
- 302   3                  tmr1_is_open = 0;
- 303   3                  return;
- 304   3              }
- 305   2              // }  // while(1)
- 306   2          }
- 307   1      }
- 308          
- 309          // 根据温度（电压值扫描）或9脚的状态来设定占空比
- 310          void set_duty(void)
- 311          {
- 312   1          // 如果温度正常，根据9脚的状态来调节PWM占空比
- 313   1          if (TEMP_NORMAL == temp_status)
- 314   1          {
- 315   2              according_pin9_to_adjust_pwm();
- 316   2      #if USE_MY_DEBUG
+                              {
+                                  // 只要有一次温度小于75摄氏度，就认为温度没有大于75摄氏度
+                                  temp_status = TEMP_75;
+                                  return;
+                              }
+                          }
+              
+                          // 如果运行到这里，说明上面连续、多次检测到的温度都大于75摄氏度 
+                          temp_status = TEMP_75_5_MIN;
+                          tmr1_disable(); // 关闭定时器
+                          tmr1_cnt = 0;   // 清空时间计数值
+                          tmr1_is_open = 0;
+                          return;
+              #endif // OLD
+ 302   3      
+ 303   3      #if 1 // NEW
+ 304   3      
+ 305   3                  static volatile u8 cnt = 0;
+ 306   3      
+ 307   3                  if (voltage > VOLTAGE_TEMP_75)
+ 308   3                  {
+ 309   4                      cnt++;
+ 310   4                  }
+ 311   3                  else
+ 312   3                  {
+ 313   4                      cnt = 0;
+ 314   4                  }
+ 315   3      
+ 316   3                  if (cnt >= 10)
+ 317   3                  {
+ 318   4                      cnt = 0;
+ 319   4                      temp_status = TEMP_75_5_MIN; // 状态标志设置为超过75摄氏度且超过5min
+ 320   4                      tmr1_disable();              // 关闭定时器
+ 321   4                      tmr1_cnt = 0;                // 清空时间计数值
+ 322   4                      tmr1_is_open = 0;
+ 323   4                  }
+ 324   3                  else
+ 325   3                  {
+ 326   4                      temp_status = TEMP_75;
+ 327   4                  }
+ 328   3      
+ 329   3                  return;
+ 330   3      #endif // NEW
+ 331   3              }
+ 332   2          }
+ 333   1      }
+ 334          
+ 335          // 根据温度（电压值扫描）或9脚的状态来设定占空比
+ 336          void set_duty(void)
+ 337          {
+ 338   1          // 如果温度正常，根据9脚的状态来调节PWM占空比
+ 339   1          if (TEMP_NORMAL == temp_status)
+ 340   1          {
+ 341   2              according_pin9_to_adjust_pwm();
+ 342   2      #if USE_MY_DEBUG
                       // printf("cur duty: %d\n", c_duty);
               #endif
- 319   2          }
- 320   1          else if (TEMP_75 == temp_status)
- 321   1          {
- 322   2              limited_pwm_duty_due_to_temp = PWM_DUTY_50_PERCENT; // 将pwm占空比限制到最大占空比的 
+ 345   2          }
+ 346   1          else if (TEMP_75 == temp_status)
+ 347   1          {
+ 348   2              limited_pwm_duty_due_to_temp = PWM_DUTY_50_PERCENT; // 将pwm占空比限制到最大占空比的 
              -50%
- 323   2          }
- 324   1          // else if (TEMP_75_30MIN == temp_status)
- 325   1          else if (TEMP_75_5_MIN == temp_status)
- 326   1          {
- 327   2              limited_pwm_duty_due_to_temp = PWM_DUTY_25_PERCENT; // 将pwm占空比限制到最大占空比的 
+C51 COMPILER V9.60.7.0   ADC                                                               10/16/2025 09:07:20 PAGE 7   
+
+ 349   2          }
+ 350   1          // else if (TEMP_75_30MIN == temp_status)
+ 351   1          else if (TEMP_75_5_MIN == temp_status)
+ 352   1          {
+ 353   2              limited_pwm_duty_due_to_temp = PWM_DUTY_25_PERCENT; // 将pwm占空比限制到最大占空比的 
              -25%
- 328   2          }
- 329   1      }
- 330          
- 331          // volatile u16 adc_val_pin_9_filter_count = 0;
- 332          // u16 adc_val_pin_9_temp;
- 333          // 更新9脚采集的ad值
- 334          void adc_update_pin_9_adc_val(void)
- 335          {
- 336   1          adc_sel_pin(ADC_SEL_PIN_GET_VOL);
- 337   1          adc_val_pin_9 = adc_get_val();
- 338   1      
- 339   1      #if USE_MY_DEBUG // 打印从9脚采集到的ad值
+ 354   2          }
+ 355   1      }
+ 356          
+ 357          // volatile u16 adc_val_pin_9_filter_count = 0;
+ 358          // u16 adc_val_pin_9_temp;
+ 359          // 更新9脚采集的ad值
+ 360          void adc_update_pin_9_adc_val(void)
+ 361          {
+ 362   1          adc_sel_pin(ADC_SEL_PIN_GET_VOL);
+ 363   1          adc_val_pin_9 = adc_get_val();
+ 364   1      
+ 365   1      #if USE_MY_DEBUG // 打印从9脚采集到的ad值
                   // printf("adc_val_pin_9 %u\n", adc_val_pin_9);
               
                   // printf(",a=%u,", adc_val_pin_9);
               #endif // USE_MY_DEBUG // 打印从9脚采集到的ad值
- 344   1      }
-C51 COMPILER V9.60.7.0   ADC                                                               10/14/2025 18:17:19 PAGE 7   
-
- 345          
- 346          void fan_scan(void)
- 347          {  
- 348   1          u16 adc_val = 0;
- 349   1          adc_sel_pin(ADC_SEL_PIN_FAN_DETECT);
- 350   1          adc_val = adc_get_val();
- 351   1      
- 352   1          // {
- 353   1          //     static u16 cnt = 0;
- 354   1          //     cnt++;
- 355   1          //     if (cnt >= 200)
- 356   1          //     {
- 357   1          //         cnt = 0;
- 358   1          //         printf("fan adc val : %u\n", adc_val);
- 359   1          //     }
- 360   1          // }
- 361   1      
- 362   1          /*
- 363   1              1脚电压低于4.3V时，14，15脚输出25%占空比，
- 364   1              1脚电压高于4.5V时，14，15脚输出100%占空比
- 365   1          */
- 366   1      
- 367   1          if (FAN_STATUS_NORMAL == cur_fan_status)
- 368   1          {
- 369   2              if (adc_val <= ADC_VAL_WHEN_FAN_ERR)
- 370   2              {
- 371   3                  flag_tim_scan_fan_is_err = 1; // 表示风扇异常，让定时器累计时间
- 372   3              }
- 373   2              else
- 374   2              {
- 375   3                  // 风扇正常时，只要有一次ad值不满足异常的条件，便认为它是正常工�
+ 370   1      }
+ 371          
+ 372          void fan_scan(void)
+ 373          {
+ 374   1          u16 adc_val = 0;
+ 375   1          adc_sel_pin(ADC_SEL_PIN_FAN_DETECT);
+ 376   1          // adc_val = adc_get_val();
+ 377   1          adc_val = adc_get_val_single();
+ 378   1      
+ 379   1          // {
+ 380   1          //     static u16 cnt = 0;
+ 381   1          //     cnt++;
+ 382   1          //     if (cnt >= 200)
+ 383   1          //     {
+ 384   1          //         cnt = 0;
+ 385   1          //         printf("fan adc val : %u\n", adc_val);
+ 386   1          //     }
+ 387   1          // }
+ 388   1      
+ 389   1          /*
+ 390   1              1脚电压低于4.3V时，14，15脚输出25%占空比，
+ 391   1              1脚电压高于4.5V时，14，15脚输出100%占空比
+ 392   1          */
+ 393   1      
+ 394   1          if (FAN_STATUS_NORMAL == cur_fan_status)
+ 395   1          {
+ 396   2              if (adc_val <= ADC_VAL_WHEN_FAN_ERR)
+ 397   2              {
+ 398   3                  flag_tim_scan_fan_is_err = 1; // 表示风扇异常，让定时器累计时间
+ 399   3              }
+ 400   2              else
+ 401   2              {
+ 402   3                  // 风扇正常时，只要有一次ad值不满足异常的条件，便认为它是正常工�
              -�
- 376   3                  flag_tim_scan_fan_is_err = 0;
- 377   3              }
- 378   2      
- 379   2              // 风扇正常工作，pwm正常输出
- 380   2              limited_pwm_duty_due_to_fan_err = PWM_DUTY_100_PERCENT;
- 381   2          }
- 382   1          else // FAN_STATUS_ERROR == cur_fan_status
- 383   1          {
- 384   2              // 风扇异常时，检测到的ad值要与【风扇异常时对应的ad值】相隔一个死区�
+ 403   3                  flag_tim_scan_fan_is_err = 0;
+ 404   3              }
+ 405   2      
+ 406   2              // 风扇正常工作，pwm正常输出
+ 407   2              limited_pwm_duty_due_to_fan_err = PWM_DUTY_100_PERCENT;
+ 408   2          }
+C51 COMPILER V9.60.7.0   ADC                                                               10/16/2025 09:07:20 PAGE 8   
+
+ 409   1          else // FAN_STATUS_ERROR == cur_fan_status
+ 410   1          {
+ 411   2              // 风扇异常时，检测到的ad值要与【风扇异常时对应的ad值】相隔一个死区�
              -��才认为风扇恢复正常
- 385   2              if (adc_val >= ADC_VAL_WHEN_FAN_NORMAL)
- 386   2              {
- 387   3                  flag_tim_scan_fan_is_err = 0; // 表示风扇正常
- 388   3              }
- 389   2      
- 390   2              // 风扇工作异常，限制pwm输出，占空比不超过25%
- 391   2              limited_pwm_duty_due_to_fan_err = PWM_DUTY_25_PERCENT;
- 392   2          }
- 393   1      }
+ 412   2              if (adc_val >= ADC_VAL_WHEN_FAN_NORMAL)
+ 413   2              {
+ 414   3                  flag_tim_scan_fan_is_err = 0; // 表示风扇正常
+ 415   3              }
+ 416   2      
+ 417   2              // 风扇工作异常，限制pwm输出，占空比不超过25%
+ 418   2              limited_pwm_duty_due_to_fan_err = PWM_DUTY_25_PERCENT;
+ 419   2          }
+ 420   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    855    ----
+   CODE SIZE        =    857    ----
    CONSTANT SIZE    =   ----    ----
-   XDATA SIZE       =      5      20
+   XDATA SIZE       =      7      19
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----
    BIT SIZE         =      2    ----
 END OF MODULE INFORMATION.
-
-C51 COMPILER V9.60.7.0   ADC                                                               10/14/2025 18:17:19 PAGE 8   
 
 
 C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

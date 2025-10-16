@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 08:47:55 PAGE 1   
+C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 09:22:16 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
@@ -62,7 +62,7 @@ line level    source
                   // FOUT_S13 |= GPIO_FOUT_UART0_TX;              // 配置为UART0_TX
                   // UART0_BAUD1 = (USER_UART0_BAUD >> 8) & 0xFF; // 配置波特率高八位
                   // UART0_BAUD0 = USER_UART0_BAUD & 0xFF;        // 配置波特率低八位
-C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 08:47:55 PAGE 2   
+C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 09:22:16 PAGE 2   
 
                   // UART0_CON0 = UART_STOP_BIT(0x0) |
                   //              UART_EN(0x1); // 8bit数据，1bit停止位
@@ -126,7 +126,7 @@ line level    source
              -��射）
  109   1          WDT_KEY = 0xBB;  // 写一个无效的数据，触发写保护
  110   1      
-C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 08:47:55 PAGE 3   
+C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 09:22:16 PAGE 3   
 
  111   1      #if USE_MY_DEBUG // 打印串口配置
                   // 初始化打印
@@ -190,7 +190,7 @@ line level    source
  168   2              if (flag_is_pwm_sub_time_comes) // pwm递减时间到来（该标志位主要用在发动机功率
              -不稳定检测中）
  169   2              {
-C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 08:47:55 PAGE 4   
+C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 09:22:16 PAGE 4   
 
  170   3                  flag_is_pwm_sub_time_comes = 0;
  171   3      
@@ -254,7 +254,7 @@ line level    source
  227   1          // delay_ms(1000);
  228   1      
  229   1          while (1)
-C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 08:47:55 PAGE 5   
+C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 09:22:16 PAGE 5   
 
  230   1          {
  231   2      #if 1
@@ -266,80 +266,84 @@ line level    source
  235   2              fan_scan();                        // 检测风扇的状态是否异常，并根据结果来限制
              -pwm占空比
  236   2              set_duty();                        // 设定到要调节到的脉宽 (设置adjust_duty)
- 237   2              according_pin9_to_adjust_pin16();  // 根据9脚的电压来设定16脚的电平
- 238   2      
- 239   2      #if USE_MY_DEBUG
+ 237   2              // according_pin9_to_adjust_pin16();  // 根据9脚的电压来设定16脚的电平
+ 238   2              {
+ 239   3                  P14 = 0;
+ 240   3              }
+ 241   2      
+ 242   2      #if USE_MY_DEBUG
                       // printf("adjust_duty %u\n", adjust_duty);
                       // printf(",b=%u,", adjust_duty);
               #endif //  USE_MY_DEBUG
- 243   2      
- 244   2      #endif
- 245   2      
- 246   2              // 测试用：
- 247   2              // if (flag_is_recved_rf_data)
- 248   2              // {
- 249   2              //     flag_is_recved_rf_data = 0;
- 250   2      
- 251   2              //     printf("recv data: 0x %lx\n", rf_data);
- 252   2              // }
- 253   2      
- 254   2              if (flag_is_rf_enable) // 如果使能了rf遥控器的功能
- 255   2              {
- 256   3                  key_driver_scan(&rf_key_para);
- 257   3                  rf_key_handle();
- 258   3              }
- 259   2      
- 260   2              {
- 261   3                  // 如果 expect_adjust_pwm_channel_x_duty 有变化，可以在这里修改 adjust_pwm_channe
+ 246   2      
+ 247   2      #endif
+ 248   2      
+ 249   2              // 测试用：
+ 250   2              // if (flag_is_recved_rf_data)
+ 251   2              // {
+ 252   2              //     flag_is_recved_rf_data = 0;
+ 253   2              //     printf("recv data: 0x %lx\n", rf_data);
+ 254   2              // }
+ 255   2      
+ 256   2              if (flag_is_rf_enable) // 如果使能了rf遥控器的功能
+ 257   2              {
+ 258   3                  key_driver_scan(&rf_key_para);
+ 259   3                  rf_key_handle();
+ 260   3              }
+ 261   2      
+ 262   2              {
+ 263   3                  // 如果 expect_adjust_pwm_channel_x_duty 有变化，可以在这里修改 adjust_pwm_channe
              -l_x_duty
- 262   3                  adjust_pwm_channel_0_duty = get_pwm_channel_x_adjust_duty(expect_adjust_pwm_channel_0_duty);
- 263   3                  adjust_pwm_channel_1_duty = get_pwm_channel_x_adjust_duty(expect_adjust_pwm_channel_1_duty);
- 264   3              }
- 265   2      
- 266   2              // 风扇控制：
- 267   2              fan_ctl();
- 268   2      
- 269   2              // 测试用：
- 270   2              // {
- 271   2              //     static u16 cnt = 0;
- 272   2              //     cnt++;
- 273   2      
- 274   2              //     // if (cnt >= 10)
- 275   2              //     if (cnt >= 100)
- 276   2              //     {
- 277   2              //         cnt = 0;
- 278   2              //         printf("expect_adjust_pwm_channel_0_duty: %u\n", expect_adjust_pwm_channel_0_duty);
- 279   2              //         printf("expect_adjust_pwm_channel_1_duty: %u\n", expect_adjust_pwm_channel_1_duty);
- 280   2              //         printf("adjust_pwm_channel_0_duty: %u\n", adjust_pwm_channel_0_duty);
- 281   2              //         printf("adjust_pwm_channel_1_duty: %u\n", adjust_pwm_channel_1_duty);
- 282   2              //         printf("cur_pwm_channel_0_duty: %u\n", cur_pwm_channel_0_duty);
- 283   2              //         printf("cur_pwm_channel_1_duty: %u\n", cur_pwm_channel_1_duty);
- 284   2              //     }
- 285   2              // }
+ 264   3                  adjust_pwm_channel_0_duty = get_pwm_channel_x_adjust_duty(expect_adjust_pwm_channel_0_duty);
+ 265   3                  adjust_pwm_channel_1_duty = get_pwm_channel_x_adjust_duty(expect_adjust_pwm_channel_1_duty);
+ 266   3              }
+ 267   2      
+ 268   2              // 风扇控制：
+ 269   2              fan_ctl();
+ 270   2      
+ 271   2              // 测试用：
+ 272   2              // {
+ 273   2              //     static u16 cnt = 0;
+ 274   2              //     cnt++;
+ 275   2      
+ 276   2              //     // if (cnt >= 10)
+ 277   2              //     if (cnt >= 100)
+ 278   2              //     {
+ 279   2              //         cnt = 0;
+ 280   2              //         // printf("expect_adjust_pwm_channel_0_duty: %u\n", expect_adjust_pwm_channel_0_duty);
+ 281   2              //         // printf("expect_adjust_pwm_channel_1_duty: %u\n", expect_adjust_pwm_channel_1_duty);
+ 282   2              //         // printf("adjust_pwm_channel_0_duty: %u\n", adjust_pwm_channel_0_duty);
+ 283   2              //         // printf("adjust_pwm_channel_1_duty: %u\n", adjust_pwm_channel_1_duty);
+ 284   2              //         // printf("cur_pwm_channel_0_duty: %u\n", cur_pwm_channel_0_duty);
+ 285   2              //         // printf("cur_pwm_channel_1_duty: %u\n", cur_pwm_channel_1_duty);
  286   2      
- 287   2              // printf("cur pwm_channel_0_duty %u\n", cur_pwm_channel_0_duty);
-C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 08:47:55 PAGE 6   
+ 287   2              //         printf("__LINE__ %u\n", __LINE__);
+C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 09:22:16 PAGE 6   
 
- 288   2              // printf("cur pwm_channel_1_duty %u\n", cur_pwm_channel_1_duty);
- 289   2      
- 290   2              // printf("adjust_pwm_channel_0_duty %u\n", adjust_pwm_channel_0_duty);
- 291   2              // printf("adjust_pwm_channel_1_duty %u\n", adjust_pwm_channel_1_duty);
- 292   2      
- 293   2              // printf("limited_pwm_duty_due_to_temp %u\n", limited_pwm_duty_due_to_temp);
- 294   2              // printf("limited_pwm_duty_due_to_unstable_engine %u\n", limited_pwm_duty_due_to_unstable_engine)
+ 288   2              //     }
+ 289   2              // }
+ 290   2      
+ 291   2              // printf("cur pwm_channel_0_duty %u\n", cur_pwm_channel_0_duty);
+ 292   2              // printf("cur pwm_channel_1_duty %u\n", cur_pwm_channel_1_duty);
+ 293   2      
+ 294   2              // printf("adjust_pwm_channel_0_duty %u\n", adjust_pwm_channel_0_duty);
+ 295   2              // printf("adjust_pwm_channel_1_duty %u\n", adjust_pwm_channel_1_duty);
+ 296   2      
+ 297   2              // printf("limited_pwm_duty_due_to_temp %u\n", limited_pwm_duty_due_to_temp);
+ 298   2              // printf("limited_pwm_duty_due_to_unstable_engine %u\n", limited_pwm_duty_due_to_unstable_engine)
              -;
- 295   2          }
- 296   1      }
- 297          
- 298          /**
- 299           * @}
- 300           */
+ 299   2          }
+ 300   1      }
  301          
- 302          /*************************** (C) COPYRIGHT 2022 HUGE-IC ***** END OF FILE *****/
+ 302          /**
+ 303           * @}
+ 304           */
+ 305          
+ 306          /*************************** (C) COPYRIGHT 2022 HUGE-IC ***** END OF FILE *****/
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    506    ----
+   CODE SIZE        =    505    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =      8    ----
    PDATA SIZE       =   ----    ----

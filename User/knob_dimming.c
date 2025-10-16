@@ -19,6 +19,7 @@ void update_max_pwm_duty_coefficient(void)
     volatile u16 adc_val = 0;
     adc_sel_pin(ADC_SEL_PIN_P31);
     adc_val = adc_get_val();
+    // adc_val = adc_get_val_single();
 
     // limited_max_pwm_duty = (u32)adjust_duty * adc_val / 4096; // 会出现指数级下降，因为adjust_duty一直在变化
     // limited_max_pwm_duty = (u32)MAX_PWM_DUTY * adc_val / 4096; // 分级太多，加上抖动和迅速变化，会导致灯光闪烁
