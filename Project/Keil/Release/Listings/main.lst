@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 09:22:16 PAGE 1   
+C51 COMPILER V9.60.7.0   MAIN                                                              10/21/2025 17:39:42 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
@@ -62,7 +62,7 @@ line level    source
                   // FOUT_S13 |= GPIO_FOUT_UART0_TX;              // 配置为UART0_TX
                   // UART0_BAUD1 = (USER_UART0_BAUD >> 8) & 0xFF; // 配置波特率高八位
                   // UART0_BAUD0 = USER_UART0_BAUD & 0xFF;        // 配置波特率低八位
-C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 09:22:16 PAGE 2   
+C51 COMPILER V9.60.7.0   MAIN                                                              10/21/2025 17:39:42 PAGE 2   
 
                   // UART0_CON0 = UART_STOP_BIT(0x0) |
                   //              UART_EN(0x1); // 8bit数据，1bit停止位
@@ -126,7 +126,7 @@ line level    source
              -��射）
  109   1          WDT_KEY = 0xBB;  // 写一个无效的数据，触发写保护
  110   1      
-C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 09:22:16 PAGE 3   
+C51 COMPILER V9.60.7.0   MAIN                                                              10/21/2025 17:39:42 PAGE 3   
 
  111   1      #if USE_MY_DEBUG // 打印串口配置
                   // 初始化打印
@@ -190,7 +190,7 @@ line level    source
  168   2              if (flag_is_pwm_sub_time_comes) // pwm递减时间到来（该标志位主要用在发动机功率
              -不稳定检测中）
  169   2              {
-C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 09:22:16 PAGE 4   
+C51 COMPILER V9.60.7.0   MAIN                                                              10/21/2025 17:39:42 PAGE 4   
 
  170   3                  flag_is_pwm_sub_time_comes = 0;
  171   3      
@@ -254,7 +254,7 @@ line level    source
  227   1          // delay_ms(1000);
  228   1      
  229   1          while (1)
-C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 09:22:16 PAGE 5   
+C51 COMPILER V9.60.7.0   MAIN                                                              10/21/2025 17:39:42 PAGE 5   
 
  230   1          {
  231   2      #if 1
@@ -318,7 +318,7 @@ line level    source
  285   2              //         // printf("cur_pwm_channel_1_duty: %u\n", cur_pwm_channel_1_duty);
  286   2      
  287   2              //         printf("__LINE__ %u\n", __LINE__);
-C51 COMPILER V9.60.7.0   MAIN                                                              10/16/2025 09:22:16 PAGE 6   
+C51 COMPILER V9.60.7.0   MAIN                                                              10/21/2025 17:39:42 PAGE 6   
 
  288   2              //     }
  289   2              // }

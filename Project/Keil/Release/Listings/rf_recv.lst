@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 1   
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE RF_RECV
@@ -62,7 +62,7 @@ line level    source
   51              RF_KEY_EVENT_ID_5_LOOSE,
   52          
   53              RF_KEY_EVENT_ID_6_CLICK,
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 2   
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 2   
 
   54              RF_KEY_EVENT_ID_6_LONG,
   55              RF_KEY_EVENT_ID_6_HOLD,
@@ -126,7 +126,7 @@ line level    source
  113          
  114          #define RF_KEY_EFFECT_EVENT_NUMS (4) // 单个触摸按键的有效按键事件个数 (单击、长按、�
              -��续、松开)
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 3   
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 3   
 
  115          // 将按键id和按键事件绑定起来，在 xx 函数中，通过查表的方式得到按键事件
  116          // static const u8 rf_key_event_table[][RF_KEY_EFFECT_EVENT_NUMS + 1] = {
@@ -190,7 +190,7 @@ line level    source
  152              {RF_KEY_ID_2, RF_KEY_EVENT_ID_2_CLICK, RF_KEY_EVENT_ID_2_LONG, RF_KEY_EVENT_ID_2_HOLD, RF_KEY_EVENT_ID
              -_2_LOOSE}, //
  153              {RF_KEY_ID_3, RF_KEY_EVENT_ID_3_CLICK, RF_KEY_EVENT_ID_3_LONG, RF_KEY_EVENT_ID_3_HOLD, RF_KEY_EVENT_ID
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 4   
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 4   
 
              -_3_LOOSE}, //
  154              {RF_KEY_ID_4, RF_KEY_EVENT_ID_4_CLICK, RF_KEY_EVENT_ID_4_LONG, RF_KEY_EVENT_ID_4_HOLD, RF_KEY_EVENT_ID
@@ -254,7 +254,7 @@ line level    source
  201          
  202              NO_KEY,         // .latest_key_val
  203              KEY_EVENT_NONE, // .latest_key_event
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 5   
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 5   
 
  204          }; // volatile struct key_driver_para rf_key_para
  205          
@@ -318,7 +318,7 @@ line level    source
  262   6                              // 如果是控制两路PWM的遥控器，接收到的数据低8位是键值
  263   6                              // ret &= 0xFF; // 可以不写这一句
  264   6                          }
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 6   
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 6   
 
  265   5                          else
  266   5                          {
@@ -382,7 +382,7 @@ line level    source
  322   2              {
  323   3                  // 如果往 KEY_EVENT 枚举中添加了新的按键事件，这里查表的方法就会失�
              -�，需要手动修改
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 7   
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 7   
 
  324   3                  if (key_val == rf_key_1_2_event_table[i][0])
  325   3                  {
@@ -446,7 +446,7 @@ line level    source
  382   3                  // 现在读到的遥控器按键是否与存放的遥控器信息不一致，或者之前没�
              -��存放有效的遥控器
  383   3                  // 开始判断是不是对码按键
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 8   
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 8   
 
  384   3                  if (RF_KEY_ID_1 == key_val)
  385   3                  {
@@ -510,7 +510,7 @@ line level    source
  443   1      
  444   1          { // 用于进行对码的代码块
  445   2              static u8 last_key_event = KEY_EVENT_NONE;
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 9   
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 9   
 
  446   2      
  447   2              if (1 == flag_is_in_rf_learning) // 处于rf对码期间，才进入
@@ -574,7 +574,7 @@ line level    source
  501   4                      return;
  502   4                  }
  503   3              }
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 10  
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 10  
 
  504   2      
  505   2          } // 用于进行对码的代码块
@@ -638,7 +638,7 @@ line level    source
              -值
  561   3                  // set_pwm_channel_0_duty(adjust_pwm_channel_0_duty);
  562   3      
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 11  
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 11  
 
  563   3                  // cur_pwm_channel_1_duty = adjust_pwm_channel_1_duty; // 更新当前的占空比对应的数
              -值
@@ -702,7 +702,7 @@ line level    source
  620   2              expect_adjust_pwm_channel_1_duty += (PWM_DUTY_100_PERCENT * 5 / 100); // 每次调节5%
  621   2              if (expect_adjust_pwm_channel_1_duty > PWM_DUTY_100_PERCENT)
  622   2              {
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 12  
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 12  
 
  623   3                  // 防止溢出
  624   3                  expect_adjust_pwm_channel_1_duty = PWM_DUTY_100_PERCENT;
@@ -766,7 +766,7 @@ line level    source
  679   3              }
  680   2              else
  681   2              {
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 13  
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 13  
 
  682   3                  // 如果  expect_adjust_pwm_channel_0_duty 已经小于 最大占空比的5% (PWM_DUTY_100_PE
              -RCENT * 5 / 100)
@@ -830,7 +830,7 @@ line level    source
              -RF_HOLD_PRESS_TIME_THRESHOLD_MS)))
  735   2              {
  736   3                  expect_adjust_pwm_channel_1_duty -= PWM_DUTY_100_PERCENT / (RF_ADJUST_TOTAL_TIMES_FOR_HOLD / R
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 14  
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 14  
 
              -F_HOLD_PRESS_TIME_THRESHOLD_MS);
  737   3      
@@ -894,7 +894,7 @@ line level    source
  791   3              }
  792   2      
  793   2              expect_adjust_pwm_channel_1_duty += PWM_DUTY_100_PERCENT / (RF_ADJUST_TOTAL_TIMES_FOR_HOLD / RF_HO
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 15  
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 15  
 
              -LD_PRESS_TIME_THRESHOLD_MS);
  794   2              if (expect_adjust_pwm_channel_1_duty > PWM_DUTY_100_PERCENT)
@@ -958,7 +958,7 @@ line level    source
  844   3                  expect_adjust_pwm_channel_1_duty = 0;
  845   3              }
  846   2      
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 16  
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 16  
 
  847   2              // 主函数会频繁调用该语句，可以优化掉：
  848   2              // adjust_pwm_channel_0_duty = get_pwm_channel_x_adjust_duty(expect_adjust_pwm_channel_0_duty);
@@ -1022,7 +1022,7 @@ line level    source
  899   3              }
  900   2              else // 如果PWM未使能
  901   2              {
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 17  
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 17  
 
  902   3                  expect_adjust_pwm_channel_0_duty = MAX_PWM_DUTY;
  903   3                  expect_adjust_pwm_channel_1_duty = MAX_PWM_DUTY;
@@ -1086,7 +1086,7 @@ line level    source
  960   2          default:
  961   2              break;
  962   2          }
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 18  
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 18  
 
  963   1      }
  964          
@@ -1150,7 +1150,7 @@ MODULE INFORMATION:   STATIC OVERLAYABLE
    XDATA SIZE       =     95       6
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
-C51 COMPILER V9.60.7.0   RF_RECV                                                           10/16/2025 09:07:21 PAGE 19  
+C51 COMPILER V9.60.7.0   RF_RECV                                                           10/21/2025 17:38:44 PAGE 19  
 
    IDATA SIZE       =   ----    ----
    BIT SIZE         =      2    ----

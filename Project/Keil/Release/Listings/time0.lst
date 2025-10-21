@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   TIME0                                                             10/16/2025 09:07:20 PAGE 1   
+C51 COMPILER V9.60.7.0   TIME0                                                             10/21/2025 17:38:44 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIME0
@@ -62,7 +62,7 @@ line level    source
   46          //     TMR0_CONL |= TMR_SOURCE_SEL(0x05);    // 配置定时器的时钟源，不用任何时钟
   47          
   48          //     // 清除定时器的计数值
-C51 COMPILER V9.60.7.0   TIME0                                                             10/16/2025 09:07:20 PAGE 2   
+C51 COMPILER V9.60.7.0   TIME0                                                             10/21/2025 17:38:44 PAGE 2   
 
   49          //     TMR0_CNTL = 0;
   50          //     TMR0_CNTH = 0;
@@ -126,7 +126,7 @@ line level    source
  107   2              { // 风扇状态检测，累计一段时间后更新状态
  108   3                  static u16 fan_normal_cnt = 0;
  109   3                  static u16 fan_err_cnt = 0;
-C51 COMPILER V9.60.7.0   TIME0                                                             10/16/2025 09:07:20 PAGE 3   
+C51 COMPILER V9.60.7.0   TIME0                                                             10/21/2025 17:38:44 PAGE 3   
 
  110   3      
  111   3                  if (flag_tim_scan_fan_is_err) // 如果检测到了风扇异常

@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   KNOB_DIMMING                                                      10/16/2025 09:07:21 PAGE 1   
+C51 COMPILER V9.60.7.0   KNOB_DIMMING                                                      10/21/2025 17:38:44 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE KNOB_DIMMING
@@ -62,7 +62,7 @@ line level    source
   44   3                  // 计算采集到的ad值所占20%对应的ad值的占比，再乘以 20%的占空比
   45   3                  /*
   46   3                      计算验证，这里的ad值如果只相差1，占空比的值也只相差1
-C51 COMPILER V9.60.7.0   KNOB_DIMMING                                                      10/16/2025 09:07:21 PAGE 2   
+C51 COMPILER V9.60.7.0   KNOB_DIMMING                                                      10/21/2025 17:38:44 PAGE 2   
 
   47   3                  */
   48   3                  // limited_max_pwm_duty = (u32)adc_val * MAX_PWM_DUTY * 2 / 10 / KNOB_DIMMING_ADC_VAL_20_PERCE
@@ -126,7 +126,7 @@ line level    source
   99   3                  flag_is_last_limited_equal_zero = 1;
  100   3              }
  101   2          }
-C51 COMPILER V9.60.7.0   KNOB_DIMMING                                                      10/16/2025 09:07:21 PAGE 3   
+C51 COMPILER V9.60.7.0   KNOB_DIMMING                                                      10/21/2025 17:38:44 PAGE 3   
 
  102   1          else // 如果上一次限制的最大占空比是0，则要等旋钮扭到 xx% 的位置再使能旋�
              -��的功能

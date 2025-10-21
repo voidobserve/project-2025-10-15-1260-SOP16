@@ -94,9 +94,10 @@ static u16 t_adc_min = 4096; // 存放一段时间内采集到的最小ad值
 static u8 over_drive_status = 0;
 #define OVER_DRIVE_RESTART_TIME (30)
 
-static volatile u16 filter_buff_2[270] = {0}; // 用于滤波的数组 (对应 5.83ms 执行一次的函数 according_pin9_to_adjust_pwm )
+// static volatile u16 filter_buff_2[270] = {0}; // 用于滤波的数组 (对应 5.83ms 执行一次的函数 according_pin9_to_adjust_pwm )
+static volatile u16 filter_buff_2[25] = {0}; // 用于滤波的数组 
 // static volatile u16 filter_buff_2[540] = {0}; // 用于滤波的数组 (对应 2.93ms 执行一次的函数 according_pin9_to_adjust_pwm，时间越短，数组需要加大)
-static volatile u16 buff_index_2 = 0;         // 用于滤波的数组下标
+static volatile u16 buff_index_2 = 0; // 用于滤波的数组下标
 
 /*
     电源电压低于170V-AC,启动低压保护，电源电压高于170V-AC，关闭低压保护
@@ -196,7 +197,7 @@ void according_pin9_to_adjust_pwm(void)
         }
 
         // MY_DEBUG:
-        // { 
+        // {
         //     // 根据发动机不稳定降功率的功能正常时，测得是5.83ms执行一次，每100次打印一次，平均耗时是583ms
         //     // 如果循环大于5.83ms，在客户那里测试好像功能也正常，客户没有进一步反馈
         //     static u8 cnt = 0;
@@ -218,19 +219,14 @@ void according_pin9_to_adjust_pwm(void)
 
         if (over_drive_status == OVER_DRIVE_RESTART_TIME) // 9脚电压超过不稳定阈值对应的电压
         {
-            over_drive_status -= 1;
-            // if (adjust_duty > PWM_DUTY_50_PERCENT)
+            over_drive_status -= 1; 
             if (limited_pwm_duty_due_to_unstable_engine > PWM_DUTY_50_PERCENT)
-            {
-                // adjust_duty -= 300; // 变化太大，会造成灯光闪烁
-                // adjust_duty -= 1;
+            { 
                 limited_pwm_duty_due_to_unstable_engine -= 1;
             }
-
-            // if (adjust_duty < PWM_DUTY_50_PERCENT)
+ 
             if (limited_pwm_duty_due_to_unstable_engine < PWM_DUTY_50_PERCENT)
-            {
-                // adjust_duty = PWM_DUTY_50_PERCENT;
+            { 
                 limited_pwm_duty_due_to_unstable_engine = PWM_DUTY_50_PERCENT;
             }
         }
@@ -239,11 +235,9 @@ void according_pin9_to_adjust_pwm(void)
             // 未满载 pwm++
             if (flag_is_pwm_add_time_comes) // pwm占空比递增时间到来
             {
-                flag_is_pwm_add_time_comes = 0;
-                // if (adjust_duty < PWM_DUTY_100_PERCENT)
+                flag_is_pwm_add_time_comes = 0; 
                 if (limited_pwm_duty_due_to_unstable_engine < PWM_DUTY_100_PERCENT)
-                {
-                    // adjust_duty++;
+                { 
                     limited_pwm_duty_due_to_unstable_engine++;
                 }
             }
@@ -255,32 +249,25 @@ void according_pin9_to_adjust_pwm(void)
         if (flag_is_pwm_sub_time_comes) // pwm占空比递减时间到来
         {
             flag_is_pwm_sub_time_comes = 0;
-            // if (flag_is_sub_power == 0)
-            //     flag_is_sub_power = 1;
-            // else if (flag_is_sub_power == 1)
-            //     flag_is_sub_power = 2;
+
             if (flag_is_sub_power < 4)
+            {
                 flag_is_sub_power++;
+            }
 
             flag_is_sub_power2 = 0;
             flag_is_add_power = 0;
 
-            // if (adjust_duty > PWM_DUTY_30_PERCENT)
-            // if (adjust_duty > PWM_DUTY_50_PERCENT)
             if (limited_pwm_duty_due_to_unstable_engine > PWM_DUTY_50_PERCENT)
             {
-                // adjust_duty -= 2;
                 limited_pwm_duty_due_to_unstable_engine -= 2;
             }
-            // else if (adjust_duty < PWM_DUTY_50_PERCENT)
             else if (limited_pwm_duty_due_to_unstable_engine < PWM_DUTY_50_PERCENT)
             {
-                // adjust_duty++;
                 limited_pwm_duty_due_to_unstable_engine++;
             }
             else
             {
-                // adjust_duty = PWM_DUTY_50_PERCENT;
                 limited_pwm_duty_due_to_unstable_engine = PWM_DUTY_50_PERCENT;
             }
         }
@@ -291,36 +278,21 @@ void according_pin9_to_adjust_pwm(void)
         if (flag_is_pwm_sub_time_comes) // pwm占空比递减时间到来
         {
             flag_is_pwm_sub_time_comes = 0;
-            // if (flag_is_sub_power2 < 4)
-            //     flag_is_sub_power2++;
 
             flag_is_sub_power2 = 1;
             flag_is_sub_power = 0;
             flag_is_add_power = 0;
 
-            // if (adjust_duty > PWM_DUTY_50_PERCENT)
-            // if (adjust_duty > PWM_DUTY_30_PERCENT)
             if (limited_pwm_duty_due_to_unstable_engine > PWM_DUTY_30_PERCENT)
             {
-                // adjust_duty -= 2;
                 limited_pwm_duty_due_to_unstable_engine -= 2;
             }
             else
             {
-                // adjust_duty = PWM_DUTY_50_PERCENT;
-                // adjust_duty = PWM_DUTY_30_PERCENT;
                 limited_pwm_duty_due_to_unstable_engine = PWM_DUTY_30_PERCENT;
             }
         }
     }
-
-    // 如果 limited_pwm_duty_due_to_unstable_engine 改变，这里要更新 adjust_pwm_channel_ x _duty 的状态
-    // if (last_limited_pwm_duty_due_to_unstable_engine != limited_pwm_duty_due_to_unstable_engine)
-    // {
-    //     adjust_pwm_channel_0_duty = get_pwm_channel_x_adjust_duty(adjust_pwm_channel_0_duty);
-    //     adjust_pwm_channel_1_duty = get_pwm_channel_x_adjust_duty(adjust_pwm_channel_1_duty);
-    //     last_limited_pwm_duty_due_to_unstable_engine = limited_pwm_duty_due_to_unstable_engine;
-    // }
 }
 
 // 根据9脚的电压来设定16脚的电平（过压保护）
@@ -419,7 +391,7 @@ void pwm_channel_1_disable(void)
  * @attention 如果反复调用 adjust_pwm_channel_x_duty = get_pwm_channel_x_adjust_duty(adjust_pwm_channel_x_duty);
  *              会导致 adjust_pwm_channel_x_duty 越来越小
  *
- * @param pwm_adjust_duty 传入的目标占空比（非最终的目标占空比） expect_adjust_pwm_channel_x_duty 
+ * @param pwm_adjust_duty 传入的目标占空比（非最终的目标占空比） expect_adjust_pwm_channel_x_duty
  *
  * @return u16 最终的目标占空比
  */

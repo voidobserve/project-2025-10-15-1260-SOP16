@@ -118,6 +118,7 @@ void adc_sel_pin(const u8 adc_sel)
     // delay_ms(1);                    // 等待ADC稳定
     // 官方的demo中提到等待20us以上
     delay((u32)1450 / 2);
+    // delay((u32)1450 / 4);
 }
 
 // adc单次采集+转换（没有滤波）
@@ -190,6 +191,18 @@ void temperature_scan(void)
         return;
     }
 
+    {
+        // 调用该函数一定次数之后，才进行温度检测，缩短主循环的执行周期
+        static volatile u8 cnt = 0;
+        cnt++;
+        if (cnt < 100)
+        {
+            return;
+        }
+
+        cnt = 0;
+    }
+
     adc_sel_pin(ADC_SEL_PIN_GET_TEMP); // 先切换成热敏电阻对应的引脚的adc配置
     voltage = get_voltage_from_pin();  // 采集热敏电阻上的电压
 
@@ -201,41 +214,12 @@ void temperature_scan(void)
 #endif // USE_MY_DEBUG
 
     // 如果之前的温度为正常，检测是否超过75摄氏度（±5摄氏度）
-    if (TEMP_NORMAL == temp_status && voltage < VOLTAGE_TEMP_75)
+    // if (TEMP_NORMAL == temp_status && voltage < VOLTAGE_TEMP_75)
+    if (TEMP_NORMAL == temp_status)
     {
         // 如果检测到温度大于75摄氏度（测得的电压值要小于75摄氏度对应的电压值）
-
-// 检测10次，如果10次都小于这个电压值，才说明温度真的大于75摄氏度
-#if 0 // OLD
-
-        u8 i = 0;
-        for (i = 0; i < 10; i++)
-        {
-            voltage = get_voltage_from_pin(); // 采集热敏电阻上的电压
-            if (voltage > VOLTAGE_TEMP_75)
-            {
-                // 只要有一次温度小于75摄氏度，就认为温度没有大于75摄氏度
-                temp_status = TEMP_NORMAL;
-                return;
-            }
-        }
-
-        // 如果运行到这里，说明温度确实大于75摄氏度
-
-#if USE_MY_DEBUG
-// printf("温度超过了75摄氏度\n");
-// printf("此时采集到的电压值：%lu mV", voltage);
-#endif
-
-        temp_status = TEMP_75; // 状态标志设置为超过75摄氏度
-        return; // 函数返回，让调节占空比的函数先进行调节
-
-#endif // OLD
-
-#if 1 // NEW
-
         static volatile u8 cnt = 0;
-        if (voltage > VOLTAGE_TEMP_75)
+        if (voltage < VOLTAGE_TEMP_75) // 如果检测到温度大于75摄氏度（测得的电压值要小于75摄氏度对应的电压值）
         {
             cnt++;
         }
@@ -255,10 +239,8 @@ void temperature_scan(void)
         }
 
         return; // 函数返回，让调节占空比的函数先进行调节
-
-#endif // NEW
     }
-    else if (temp_status == TEMP_75)
+    else if (TEMP_75 == temp_status)
     {
         // 如果之前的温度超过75摄氏度
         static bit tmr1_is_open = 0;
@@ -267,44 +249,15 @@ void temperature_scan(void)
         {
             tmr1_is_open = 1;
             tmr1_cnt = 0;
-            tmr1_enable(); // 打开定时器，开始记录是否大于75摄氏度且超过30min
+            tmr1_enable(); // 打开定时器，开始记录是否大于75摄氏度且超过一定时间
         }
 
         // 如果超过75摄氏度并且过了5min，再检测温度是否超过75摄氏度
         if (tmr1_cnt >= (u32)TMR1_CNT_5_MINUTES)
         {
-
-#if 0 // OLD            
-            u8 i = 0;
-#if USE_MY_DEBUG
-            // printf("温度超过了75摄氏度且超过了30min\n");
-            // printf("此时采集到的电压值：%lu mV\n", voltage);
-#endif
-
-            for (i = 0; i < 10; i++)
-            {
-                voltage = get_voltage_from_pin(); // 采集热敏电阻上的电压
-                if (voltage > VOLTAGE_TEMP_75)
-                {
-                    // 只要有一次温度小于75摄氏度，就认为温度没有大于75摄氏度
-                    temp_status = TEMP_75;
-                    return;
-                }
-            }
-
-            // 如果运行到这里，说明上面连续、多次检测到的温度都大于75摄氏度 
-            temp_status = TEMP_75_5_MIN;
-            tmr1_disable(); // 关闭定时器
-            tmr1_cnt = 0;   // 清空时间计数值
-            tmr1_is_open = 0;
-            return;
-#endif // OLD
-
-#if 1 // NEW
-
             static volatile u8 cnt = 0;
 
-            if (voltage > VOLTAGE_TEMP_75)
+            if (voltage < VOLTAGE_TEMP_75) // 如果检测到温度大于75摄氏度（测得的电压值要小于75摄氏度对应的电压值）
             {
                 cnt++;
             }
@@ -327,7 +280,6 @@ void temperature_scan(void)
             }
 
             return;
-#endif // NEW
         }
     }
 }
@@ -347,7 +299,6 @@ void set_duty(void)
     {
         limited_pwm_duty_due_to_temp = PWM_DUTY_50_PERCENT; // 将pwm占空比限制到最大占空比的 50%
     }
-    // else if (TEMP_75_30MIN == temp_status)
     else if (TEMP_75_5_MIN == temp_status)
     {
         limited_pwm_duty_due_to_temp = PWM_DUTY_25_PERCENT; // 将pwm占空比限制到最大占空比的 25%
@@ -362,6 +313,8 @@ void adc_update_pin_9_adc_val(void)
     adc_sel_pin(ADC_SEL_PIN_GET_VOL);
     adc_val_pin_9 = adc_get_val();
 
+    // adc_val_pin_9 = 1000; // 测试时使用
+
 #if USE_MY_DEBUG // 打印从9脚采集到的ad值
     // printf("adc_val_pin_9 %u\n", adc_val_pin_9);
 
@@ -371,7 +324,8 @@ void adc_update_pin_9_adc_val(void)
 
 void fan_scan(void)
 {
-    u16 adc_val = 0;
+    u16 adc_val = 0; 
+
     adc_sel_pin(ADC_SEL_PIN_FAN_DETECT);
     // adc_val = adc_get_val();
     adc_val = adc_get_val_single();
