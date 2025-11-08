@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   KNOB_DIMMING                                                      10/21/2025 17:38:44 PAGE 1   
+C51 COMPILER V9.60.7.0   KNOB_DIMMING                                                      11/08/2025 16:53:10 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE KNOB_DIMMING
@@ -26,129 +26,89 @@ line level    source
   13   1              相当于给关机和开机之间划一个较大的死区
   14   1          */
   15   1          static bit flag_is_last_limited_equal_zero = 0;
-  16   1      
-  17   1          // static u16 last_limited_max_pwm_duty = MAX_PWM_DUTY;
+  16   1       
+  17   1          volatile u16 adc_val = adc_val_from_knob; // adc_val_from_knob 由adc中断更新
   18   1      
-  19   1          volatile u16 adc_val = 0;
-  20   1          adc_sel_pin(ADC_SEL_PIN_P31);
-  21   1          adc_val = adc_get_val();
-  22   1          // adc_val = adc_get_val_single();
-  23   1      
-  24   1          // limited_max_pwm_duty = (u32)adjust_duty * adc_val / 4096; // 会出现指数级下降，因为adjus
-             -t_duty一直在变化
-  25   1          // limited_max_pwm_duty = (u32)MAX_PWM_DUTY * adc_val / 4096; // 分级太多，加上抖动和迅速�
-             -��化，会导致灯光闪烁
-  26   1      
-  27   1      #if 1
-  28   1      
-  29   1          // 它闪灯可能是因为功率太低，也可能是检测脚的波动，导致单片机触发了频
+  19   1          // 它闪灯可能是因为功率太低，也可能是检测脚的波动，导致单片机触发了频
              -繁开灯关灯的操作
-  30   1          // 方法1：试着加大调光那里的电容，提供一个缓冲
-  31   1          // 方法2：单片机检测到关灯之后，再检测到旋钮调到20%、30%之后再开灯
-  32   1      
-  33   1          if (0 == flag_is_last_limited_equal_zero) // 如果上一次限制的最大占空比不是0，则正�
+  20   1          // 方法1：试着加大调光那里的电容，提供一个缓冲
+  21   1          // 方法2：单片机检测到关灯之后，再检测到旋钮调到20%、30%之后再开灯
+  22   1      
+  23   1          if (0 == flag_is_last_limited_equal_zero) // 如果上一次限制的最大占空比不是0，则正�
              -�地根据旋钮来限制最大占空比
-  34   1          {
-  35   2              // 下面条件语句块内的值和判断条件中的值不一样，不过影响不大
-  36   2              // ad值是假设参考电压VCC为4.87V，计算得出
-  37   2              if (adc_val <= KNOB_DIMMING_MIN_ADC_VAL) // MIN 0%  0.57V
-  38   2              {
-  39   3                  limited_max_pwm_duty = 0;
-  40   3              }
-  41   2              // else if (adc_val <= 1278) // 20% 1.52V
-  42   2              else if (adc_val <= KNOB_DIMMING_ADC_VAL_20_PERCENT) // 20% 1.52V /* 这里用5V作为参考电压
+  24   1          {
+  25   2              // 下面条件语句块内的值和判断条件中的值不一样，不过影响不大
+  26   2              // ad值是假设参考电压VCC为4.87V，计算得出
+  27   2              if (adc_val <= KNOB_DIMMING_MIN_ADC_VAL) // MIN 0%  0.57V
+  28   2              {
+  29   3                  limited_max_pwm_duty = 0;
+  30   3              }
+  31   2              // else if (adc_val <= 1278) // 20% 1.52V
+  32   2              else if (adc_val <= KNOB_DIMMING_ADC_VAL_20_PERCENT) // 20% 1.52V /* 这里用5V作为参考电压
              - */
-  43   2              {
-  44   3                  // 计算采集到的ad值所占20%对应的ad值的占比，再乘以 20%的占空比
-  45   3                  /*
-  46   3                      计算验证，这里的ad值如果只相差1，占空比的值也只相差1
-C51 COMPILER V9.60.7.0   KNOB_DIMMING                                                      10/21/2025 17:38:44 PAGE 2   
-
-  47   3                  */
-  48   3                  // limited_max_pwm_duty = (u32)adc_val * MAX_PWM_DUTY * 2 / 10 / KNOB_DIMMING_ADC_VAL_20_PERCE
+  33   2              {
+  34   3                  // 计算采集到的ad值所占20%对应的ad值的占比，再乘以 20%的占空比
+  35   3                  /*
+  36   3                      计算验证，这里的ad值如果只相差1，占空比的值也只相差1
+  37   3                  */
+  38   3                  // limited_max_pwm_duty = (u32)adc_val * MAX_PWM_DUTY * 2 / 10 / KNOB_DIMMING_ADC_VAL_20_PERCE
              -NT;
-  49   3                  // 旧版本这里最低只能调节到5%，现在让它能够调节到5%及以下:
-  50   3                  limited_max_pwm_duty = ((u32)adc_val - KNOB_DIMMING_MIN_ADC_VAL) * MAX_PWM_DUTY * 2 / 10 / KNO
+  39   3                  // 旧版本这里最低只能调节到5%，现在让它能够调节到5%及以下:
+  40   3                  limited_max_pwm_duty = ((u32)adc_val - KNOB_DIMMING_MIN_ADC_VAL) * MAX_PWM_DUTY * 2 / 10 / KNO
              -B_DIMMING_ADC_VAL_20_PERCENT;
-  51   3              }
-  52   2              // else if (adc_val <= 2498) // 40% 2.97V
-  53   2              else if (adc_val <= KNOB_DIMMING_ADC_VAL_40_PERCENT) // 40% 2.79V /* 这里用5V作为参考电压
+  41   3              }
+  42   2              // else if (adc_val <= 2498) // 40% 2.97V
+  43   2              else if (adc_val <= KNOB_DIMMING_ADC_VAL_40_PERCENT) // 40% 2.79V /* 这里用5V作为参考电压
              - */
-  54   2              {
-  55   3                  /*
-  56   3                      计算验证，这里的ad值如果只相差1，占空比的值也只相差1
-  57   3                  */
-  58   3                  limited_max_pwm_duty = (u32)adc_val * MAX_PWM_DUTY * 4 / 10 / KNOB_DIMMING_ADC_VAL_40_PERCENT;
-  59   3              }
-  60   2              // else if (adc_val <= 2641) // 50% 3.14V
-  61   2              else if (adc_val <= KNOB_DIMMING_ADC_VAL_50_PERCENT) // 50% 3.46V /* 这里用5V作为参考电压
-             - */
-  62   2              {
-  63   3                  limited_max_pwm_duty = (u32)adc_val * MAX_PWM_DUTY / 2 / KNOB_DIMMING_ADC_VAL_50_PERCENT;
-  64   3              }
-  65   2              // else if (adc_val <= 3482) // 60% 4.14V
-  66   2              else if (adc_val <= KNOB_DIMMING_ADC_VAL_60_PERCENT) // 60% 3.98V /* 这里用5V作为参考电压
-             - */
-  67   2              {
-  68   3                  limited_max_pwm_duty = (u32)adc_val * MAX_PWM_DUTY * 6 / 10 / KNOB_DIMMING_ADC_VAL_60_PERCENT;
-  69   3              }
-  70   2              // else if (adc_val <= 4087) // 80% 4.86V
-  71   2              else if (adc_val <= KNOB_DIMMING_MAX_ADC_VAL) //
-  72   2              {
-  73   3                  limited_max_pwm_duty = (u32)adc_val * MAX_PWM_DUTY * 8 / 10 / KNOB_DIMMING_MAX_ADC_VAL;
-  74   3              }
-  75   2              else
-  76   2              {
-  77   3                  // limited_max_pwm_duty = (u32)adc_val * MAX_PWM_DUTY / 4095;
-  78   3                  limited_max_pwm_duty = MAX_PWM_DUTY;
-  79   3              }
-  80   2      
-  81   2              // limited_adjust_pwm_duty = (u32)adjust_duty * limited_max_pwm_duty / MAX_PWM_DUTY; // adjust_dut
-             -y * 旋钮限制的占空比系数
-  82   2      
-  83   2              // if (limited_adjust_pwm_duty >= 5950) // 大于该值，直接输出最大功率，防止从MIN�
-             -��到MAX时，输出不了最大功率
-  84   2              // {
-  85   2              //     limited_adjust_pwm_duty = adjust_duty;
-  86   2              // }
-  87   2      
-  88   2              // 如果 limited_max_pwm_duty 改变，这里要更新 adjust_pwm_channel_ x _duty 的状态
-  89   2              // if (last_limited_max_pwm_duty != limited_max_pwm_duty)
-  90   2              // {
-  91   2              //     adjust_pwm_channel_0_duty = get_pwm_channel_x_adjust_duty(adjust_pwm_channel_0_duty);
-  92   2              //     adjust_pwm_channel_1_duty = get_pwm_channel_x_adjust_duty(adjust_pwm_channel_1_duty);
-  93   2              //     last_limited_max_pwm_duty = limited_max_pwm_duty;
-  94   2              // }
-  95   2      
-  96   2              // if (0 == limited_adjust_pwm_duty)
-  97   2              if (0 == limited_max_pwm_duty)
-  98   2              {
-  99   3                  flag_is_last_limited_equal_zero = 1;
- 100   3              }
- 101   2          }
-C51 COMPILER V9.60.7.0   KNOB_DIMMING                                                      10/21/2025 17:38:44 PAGE 3   
+  44   2              {
+  45   3                  /*
+C51 COMPILER V9.60.7.0   KNOB_DIMMING                                                      11/08/2025 16:53:10 PAGE 2   
 
- 102   1          else // 如果上一次限制的最大占空比是0，则要等旋钮扭到 xx% 的位置再使能旋�
+  46   3                      计算验证，这里的ad值如果只相差1，占空比的值也只相差1
+  47   3                  */
+  48   3                  limited_max_pwm_duty = (u32)adc_val * MAX_PWM_DUTY * 4 / 10 / KNOB_DIMMING_ADC_VAL_40_PERCENT;
+  49   3              }
+  50   2              // else if (adc_val <= 2641) // 50% 3.14V
+  51   2              else if (adc_val <= KNOB_DIMMING_ADC_VAL_50_PERCENT) // 50% 3.46V /* 这里用5V作为参考电压
+             - */
+  52   2              {
+  53   3                  limited_max_pwm_duty = (u32)adc_val * MAX_PWM_DUTY / 2 / KNOB_DIMMING_ADC_VAL_50_PERCENT;
+  54   3              }
+  55   2              // else if (adc_val <= 3482) // 60% 4.14V
+  56   2              else if (adc_val <= KNOB_DIMMING_ADC_VAL_60_PERCENT) // 60% 3.98V /* 这里用5V作为参考电压
+             - */
+  57   2              {
+  58   3                  limited_max_pwm_duty = (u32)adc_val * MAX_PWM_DUTY * 6 / 10 / KNOB_DIMMING_ADC_VAL_60_PERCENT;
+  59   3              }
+  60   2              // else if (adc_val <= 4087) // 80% 4.86V
+  61   2              else if (adc_val <= KNOB_DIMMING_MAX_ADC_VAL) //
+  62   2              {
+  63   3                  limited_max_pwm_duty = (u32)adc_val * MAX_PWM_DUTY * 8 / 10 / KNOB_DIMMING_MAX_ADC_VAL;
+  64   3              }
+  65   2              else
+  66   2              {
+  67   3                  // limited_max_pwm_duty = (u32)adc_val * MAX_PWM_DUTY / 4095;
+  68   3                  limited_max_pwm_duty = MAX_PWM_DUTY;
+  69   3              }
+  70   2      
+  71   2              if (0 == limited_max_pwm_duty)
+  72   2              {
+  73   3                  flag_is_last_limited_equal_zero = 1;
+  74   3              }
+  75   2          }
+  76   1          else // 如果上一次限制的最大占空比是0，则要等旋钮扭到 xx% 的位置再使能旋�
              -��的功能
- 103   1          {
- 104   2              if (adc_val >= KNOB_DIMMING_ADC_VAL_20_PERCENT) // 20%再开灯
- 105   2              {
- 106   3                  flag_is_last_limited_equal_zero = 0;
- 107   3              }
- 108   2          }
- 109   1      
- 110   1      #if USE_MY_DEBUG
-              
-                  // printf("cur_level %u\n", knob_dimming_cur_level);
-              
-              #endif // #if USE_MY_DEBUG
- 115   1      
- 116   1      #endif
- 117   1      }
+  77   1          {
+  78   2              if (adc_val >= KNOB_DIMMING_ADC_VAL_20_PERCENT) // 20%再开灯
+  79   2              {
+  80   3                  flag_is_last_limited_equal_zero = 0;
+  81   3              }
+  82   2          }
+  83   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    306    ----
+   CODE SIZE        =    298    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =      2       2
    PDATA SIZE       =   ----    ----

@@ -13,18 +13,8 @@ void update_max_pwm_duty_coefficient(void)
         相当于给关机和开机之间划一个较大的死区
     */
     static bit flag_is_last_limited_equal_zero = 0;
-
-    // static u16 last_limited_max_pwm_duty = MAX_PWM_DUTY;
-
-    volatile u16 adc_val = 0;
-    adc_sel_pin(ADC_SEL_PIN_P31);
-    adc_val = adc_get_val();
-    // adc_val = adc_get_val_single();
-
-    // limited_max_pwm_duty = (u32)adjust_duty * adc_val / 4096; // 会出现指数级下降，因为adjust_duty一直在变化
-    // limited_max_pwm_duty = (u32)MAX_PWM_DUTY * adc_val / 4096; // 分级太多，加上抖动和迅速变化，会导致灯光闪烁
-
-#if 1
+ 
+    volatile u16 adc_val = adc_val_from_knob; // adc_val_from_knob 由adc中断更新
 
     // 它闪灯可能是因为功率太低，也可能是检测脚的波动，导致单片机触发了频繁开灯关灯的操作
     // 方法1：试着加大调光那里的电容，提供一个缓冲
@@ -78,22 +68,6 @@ void update_max_pwm_duty_coefficient(void)
             limited_max_pwm_duty = MAX_PWM_DUTY;
         }
 
-        // limited_adjust_pwm_duty = (u32)adjust_duty * limited_max_pwm_duty / MAX_PWM_DUTY; // adjust_duty * 旋钮限制的占空比系数
-
-        // if (limited_adjust_pwm_duty >= 5950) // 大于该值，直接输出最大功率，防止从MIN扭到MAX时，输出不了最大功率
-        // {
-        //     limited_adjust_pwm_duty = adjust_duty;
-        // }
-
-        // 如果 limited_max_pwm_duty 改变，这里要更新 adjust_pwm_channel_ x _duty 的状态
-        // if (last_limited_max_pwm_duty != limited_max_pwm_duty)
-        // {
-        //     adjust_pwm_channel_0_duty = get_pwm_channel_x_adjust_duty(adjust_pwm_channel_0_duty);
-        //     adjust_pwm_channel_1_duty = get_pwm_channel_x_adjust_duty(adjust_pwm_channel_1_duty);
-        //     last_limited_max_pwm_duty = limited_max_pwm_duty;
-        // }
-
-        // if (0 == limited_adjust_pwm_duty)
         if (0 == limited_max_pwm_duty)
         {
             flag_is_last_limited_equal_zero = 1;
@@ -106,12 +80,4 @@ void update_max_pwm_duty_coefficient(void)
             flag_is_last_limited_equal_zero = 0;
         }
     }
-
-#if USE_MY_DEBUG
-
-    // printf("cur_level %u\n", knob_dimming_cur_level);
-
-#endif // #if USE_MY_DEBUG
-
-#endif
 }

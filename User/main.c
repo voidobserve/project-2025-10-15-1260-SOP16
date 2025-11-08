@@ -54,7 +54,7 @@ void my_debug_config(void)
     // UART0_CON0 = UART_STOP_BIT(0x0) |
     //              UART_EN(0x1); // 8bit数据，1bit停止位
 
-    P0_MD0 &= (GPIO_P00_MODE_SEL(0x3));
+    P0_MD0 &= ~(GPIO_P00_MODE_SEL(0x3));
     P0_MD0 |= GPIO_P00_MODE_SEL(0x1);            // 配置为输出模式
     FOUT_S00 |= GPIO_FOUT_UART0_TX;              // 配置为UART0_TX
     UART0_BAUD1 = (USER_UART0_BAUD >> 8) & 0xFF; // 配置波特率高八位
@@ -110,8 +110,19 @@ void main(void)
 
 #if USE_MY_DEBUG // 打印串口配置
     // 初始化打印
+
     my_debug_config();
     printf("sys reset\n");
+
+    // P02 配置为输出模式
+    P0_MD0 &= ~(0x03 << 4); // 清空对应的寄存器配置
+    P0_MD0 |= 0x01 << 4;    // 输出模式
+    FOUT_S02 = GPIO_FOUT_AF_FUNC;
+
+    // P21 配置为输出模式
+    P2_MD0 &= ~(0x03 << 2);
+    P2_MD0 |= 0x01 << 2; // 输出模式
+    FOUT_S21 = GPIO_FOUT_AF_FUNC;
 
     // 输出模式：
     // P1_MD0 &= (GPIO_P13_MODE_SEL(0x3));
@@ -119,24 +130,20 @@ void main(void)
     // FOUT_S13 = GPIO_FOUT_AF_FUNC;     // 选择AF功能输出
 #endif // 打印串口配置
 
-    // 过压保护  16脚-----P14
-    //		P1_MD1   &= ~GPIO_P14_MODE_SEL(0x03);
-    //		P1_MD1   |=  GPIO_P14_MODE_SEL(0x01);
-    //		FOUT_S14  =  GPIO_FOUT_AF_FUNC;
-    ///////////////////////////////////////////
-
 #if 1
     adc_pin_config(); // 配置使用到adc的引脚
-    // adc_sel_pin(ADC_SEL_PIN_GET_TEMP);
+    adc_config();
+
     tmr0_config(); // 配置定时器，默认关闭
     pwm_init();    // 配置pwm输出的引脚
     tmr1_config();
 
     timer2_config();
-#endif
+    timer3_config(); // 要等adc完成初始化，再调用timer3的初始化
 
     rf_recv_init(); // rf功能初始化
     fan_ctl_config();
+#endif
 
     limited_max_pwm_duty = MAX_PWM_DUTY;
     limited_pwm_duty_due_to_fan_err = MAX_PWM_DUTY;
@@ -156,7 +163,7 @@ void main(void)
     while (cur_pwm_channel_0_duty < limited_max_pwm_duty || /* 当 cur_pwm_channel_0_duty 大于 限制的最大占空比后，退出 */
            cur_pwm_channel_1_duty < limited_max_pwm_duty)   /* 当 cur_pwm_channel_1_duty 大于 限制的最大占空比后，退出 */
     {
-        adc_update_pin_9_adc_val();        // 采集并更新9脚的ad值
+        // adc_update_pin_9_adc_val();        // 采集并更新9脚的ad值
         update_max_pwm_duty_coefficient(); // 更新当前的最大占空比
 
 #if USE_MY_DEBUG // 直接打印0，防止在串口+图像上看到错位
@@ -173,18 +180,20 @@ void main(void)
                 只要有一次跳动，退出开机缓启动(改成等到变为 limited_max_pwm_duty 再退出)，
                 由于 adjust_duty 初始值为 MAX_PWM_DUTY ，直接退出会直接设置占空比为 adjust_duty 对应的值，
                 会导致灯光闪烁一下
+
+                目前没有使用提前退出开机缓启动的功能
             */
-            if (adc_val_pin_9 >= ADC_VAL_WHEN_UNSTABLE)
-            {
-                // if (c_duty >= PWM_DUTY_100_PERCENT)
-                // if (c_duty >= limited_max_pwm_duty)
-                if (cur_pwm_channel_0_duty >= limited_max_pwm_duty &&
-                    cur_pwm_channel_1_duty >= limited_max_pwm_duty)
-                {
-                    // adjust_duty = c_duty;
-                    break;
-                }
-            }
+            // if (adc_val_pin_9 >= ADC_VAL_WHEN_UNSTABLE)
+            // {
+            //     // if (c_duty >= PWM_DUTY_100_PERCENT)
+            //     // if (c_duty >= limited_max_pwm_duty)
+            //     if (cur_pwm_channel_0_duty >= limited_max_pwm_duty &&
+            //         cur_pwm_channel_1_duty >= limited_max_pwm_duty)
+            //     {
+            //         // adjust_duty = c_duty;
+            //         break;
+            //     }
+            // }
         }
 
         if (flag_time_comes_during_power_on) // 如果调节时间到来 -- 13ms
@@ -204,54 +213,22 @@ void main(void)
     }
 #endif // 开机缓慢启动（PWM信号变化平缓）
 
-    // MY_DEBUG:
-    // cur_pwm_channel_0_duty = MAX_PWM_DUTY;          // 测试用
-    // set_pwm_channel_0_duty(cur_pwm_channel_0_duty); // 测试用
-    // cur_pwm_channel_1_duty = MAX_PWM_DUTY;          // 测试用
-    // set_pwm_channel_1_duty(cur_pwm_channel_1_duty); // 测试用
-
     // 缓启动后，立即更新 adjust_duty 的值：
     adjust_pwm_channel_0_duty = cur_pwm_channel_0_duty;
     adjust_pwm_channel_1_duty = cur_pwm_channel_1_duty;
     flag_is_in_power_on = 0; // 表示退出了开机缓启动
     // ===================================================================
 
-    // 测试样机的最大功率：
-    // c_duty = MAX_PWM_DUTY;
-    // set_pwm_duty();
-
-    // 测试是不是由于频繁检测到电压在开机和关机之间，导致闪灯：
-    // c_duty = MAX_PWM_DUTY * 1 / 100;
-    // c_duty = MAX_PWM_DUTY * 3 / 100;
-    // c_duty = MAX_PWM_DUTY * 5 / 1000;
-    // delay_ms(1000);
-
     while (1)
     {
 #if 1
-        adc_update_pin_9_adc_val();        // 采集并更新9脚的ad值（9脚，检测发动机功率是否稳定的引脚）
         update_max_pwm_duty_coefficient(); // 根据当前旋钮的挡位，限制能调节到的最大的pwm占空比
         temperature_scan();                // 检测热敏电阻一端的电压值
         fan_scan();                        // 检测风扇的状态是否异常，并根据结果来限制pwm占空比
         set_duty();                        // 设定到要调节到的脉宽 (设置adjust_duty)
+
         // according_pin9_to_adjust_pin16();  // 根据9脚的电压来设定16脚的电平
-        {
-            P14 = 0;
-        }
-
-#if USE_MY_DEBUG
-        // printf("adjust_duty %u\n", adjust_duty);
-        // printf(",b=%u,", adjust_duty);
-#endif //  USE_MY_DEBUG
-
-#endif
-
-        // 测试用：
-        // if (flag_is_recved_rf_data)
-        // {
-        //     flag_is_recved_rf_data = 0;
-        //     printf("recv data: 0x %lx\n", rf_data);
-        // }
+        P14 = 0;
 
         if (flag_is_rf_enable) // 如果使能了rf遥控器的功能
         {
@@ -267,6 +244,9 @@ void main(void)
 
         // 风扇控制：
         fan_ctl();
+#endif
+
+        // P02 = ~P02; // 测试主循环一轮所需时间
 
         // 测试用：
         // {
@@ -284,18 +264,16 @@ void main(void)
         //         // printf("cur_pwm_channel_0_duty: %u\n", cur_pwm_channel_0_duty);
         //         // printf("cur_pwm_channel_1_duty: %u\n", cur_pwm_channel_1_duty);
 
-        //         printf("__LINE__ %u\n", __LINE__);
+        //         // printf("__LINE__ %u\n", __LINE__);
+        //         // printf("val %u\n", ADC_OVER_DRIVE_VAL);
+        //         // printf("val %u\n", (u16)adc_val_from_fan);
+        //         // printf("val %u\n", (u16)adc_val_from_temp);
+        //         // printf("val %u\n", (u16)adc_val_from_knob);
+        //         // printf("val %u\n", (u16)adc_val_from_engine);
+
+        //         // P02 = ~P02;
         //     }
         // }
-
-        // printf("cur pwm_channel_0_duty %u\n", cur_pwm_channel_0_duty);
-        // printf("cur pwm_channel_1_duty %u\n", cur_pwm_channel_1_duty);
-
-        // printf("adjust_pwm_channel_0_duty %u\n", adjust_pwm_channel_0_duty);
-        // printf("adjust_pwm_channel_1_duty %u\n", adjust_pwm_channel_1_duty);
-
-        // printf("limited_pwm_duty_due_to_temp %u\n", limited_pwm_duty_due_to_temp);
-        // printf("limited_pwm_duty_due_to_unstable_engine %u\n", limited_pwm_duty_due_to_unstable_engine);
     }
 }
 

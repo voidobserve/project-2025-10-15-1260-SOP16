@@ -11,7 +11,9 @@
 ".\Release\Objects\rf_recv.obj",
 ".\Release\Objects\key_driver.obj",
 ".\Release\Objects\flash.obj",
-".\Release\Objects\fan_ctl.obj" 
+".\Release\Objects\fan_ctl.obj",
+".\Release\Objects\timer3.obj",
+".\Release\Objects\engine.obj" 
 TO ".\Release\Objects\Demo" 
 PRINT(".\Release\Listings\Demo.m51") RAMSIZE(256) 
 CODE( 0X0000-0X3EEF )

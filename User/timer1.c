@@ -1,4 +1,5 @@
 #include "timer1.h"
+#include "stdio.h"
 
 #define TMR1_CNT_TIME 15200 // 计数周期，15200 * 0.65625us 约等于10000us--10ms
 
@@ -79,6 +80,8 @@ void TIMR1_IRQHandler(void) interrupt TMR1_IRQn
     if (TMR1_CONH & TMR_PRD_PND(0x1))
     {
         TMR1_CONH |= TMR_PRD_PND(0x1); // 清除pending
+
+        // printf("isr\n");
 
         tmr1_cnt++; // 检测温度时使用到
     }

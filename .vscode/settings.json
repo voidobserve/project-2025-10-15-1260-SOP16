@@ -11,6 +11,7 @@
         "timer1.h": "c",
         "knob_dimming.h": "c",
         "flash.h": "c",
-        "fan_ctl.h": "c"
+        "fan_ctl.h": "c",
+        "typedef.h": "c"
     }
 }

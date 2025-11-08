@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   TIMER1                                                            10/21/2025 11:57:00 PAGE 1   
+C51 COMPILER V9.60.7.0   TIMER1                                                            11/08/2025 16:53:10 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIMER1
@@ -10,95 +10,98 @@ COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\timer1.c LARGE OPTIMI
 line level    source
 
    1          #include "timer1.h"
-   2          
-   3          #define TMR1_CNT_TIME 15200 // 计数周期，15200 * 0.65625us 约等于10000us--10ms
-   4          
-   5          volatile u32 tmr1_cnt = 0; // 定时器TMR0的计数值（每次在中断服务函数中会加一，用于累计温度过热的时间）
-   6          
-   7          /**
-   8           * @brief 配置定时器TMR0，定时器默认关闭
-   9           */
-  10          void tmr1_config(void)
-  11          {
-  12   1          __SetIRQnIP(TMR1_IRQn, TMR1_IQn_CFG); // 设置中断优先级（TMR1）
-  13   1      
-  14   1          TMR1_CONL &= ~(TMR_PRESCALE_SEL(0x07)); // 清除TMR1的预分频配置寄存器
-  15   1          // 配置TMR1的预分频，为32分频，即21MHz / 32 = 0.65625MHz，约0.67us计数一次
-  16   1          // （实际测试和计算得出这个系统时钟是21MHz的，但是还是有些误差，不是准确的21MHz）
-  17   1          TMR1_CONL |= TMR_PRESCALE_SEL(0x05);
-  18   1          TMR1_CONL &= ~(TMR_MODE_SEL(0x03)); // 清除TMR1的模式配置寄存器
-  19   1          TMR1_CONL |= TMR_MODE_SEL(0x01);    // 配置TMR1的模式为计数器模式，最后对系统时钟的脉冲进行计数
-  20   1      
-  21   1          TMR1_CONH |= TMR_PRD_PND(0x01); // 清除TMR1的计数标志位，表示未完成计数
-  22   1          TMR1_CONH |= TMR_PRD_IRQ_EN(1); // 使能TMR1的计数中断
-  23   1      
-  24   1          // 配置TMR1的计数周期
-  25   1          TMR1_PRH = TMR_PERIOD_VAL_H((TMR1_CNT_TIME >> 8) & 0xFF);
-  26   1          TMR1_PRL = TMR_PERIOD_VAL_L((TMR1_CNT_TIME >> 0) & 0xFF);
-  27   1      
-  28   1          // 清除TMR1的计数值
-  29   1          TMR1_CNTL = 0;
-  30   1          TMR1_CNTH = 0;
-  31   1      
-  32   1          TMR1_CONL &= ~(TMR_SOURCE_SEL(0x07)); // 清除TMR1的时钟源配置寄存器
-  33   1          // TMR1_CONL |= TMR_SOURCE_SEL(0x07); // 配置TMR1的时钟源，使用系统时钟
-  34   1          TMR1_CONL |= TMR_SOURCE_SEL(0x05); // 配置TMR1的时钟源，不用任何时钟
-  35   1      
-  36   1          // __EnableIRQ(TMR1_IRQn);                     // 使能中断
-  37   1          __DisableIRQ(TMR1_IRQn); // 禁用中断
-  38   1          IE_EA = 1;               // 打开总中断
-  39   1      }
-  40          
-  41          /**
-  42           * @brief 开启定时器TMR1，开始计时
-  43           */
-  44          void tmr1_enable(void)
-  45          {
-  46   1          // 重新给TMR1配置时钟
-  47   1          TMR1_CONL &= ~(TMR_SOURCE_SEL(0x07)); // 清除定时器的时钟源配置寄存器
-  48   1          TMR1_CONL |= TMR_SOURCE_SEL(0x06);    // 配置定时器的时钟源，使用系统时钟（约21MHz）
-  49   1      
-  50   1          __EnableIRQ(TMR1_IRQn); // 使能中断
-  51   1          IE_EA = 1;              // 打开总中断
-  52   1      }
-  53          
-C51 COMPILER V9.60.7.0   TIMER1                                                            10/21/2025 11:57:00 PAGE 2   
+   2          #include "stdio.h"
+   3          
+   4          #define TMR1_CNT_TIME 15200 // 计数周期，15200 * 0.65625us 约等于10000us--10ms
+   5          
+   6          volatile u32 tmr1_cnt = 0; // 定时器TMR0的计数值（每次在中断服务函数中会加一，用于累计温度过热的时间）
+   7          
+   8          /**
+   9           * @brief 配置定时器TMR0，定时器默认关闭
+  10           */
+  11          void tmr1_config(void)
+  12          {
+  13   1          __SetIRQnIP(TMR1_IRQn, TMR1_IQn_CFG); // 设置中断优先级（TMR1）
+  14   1      
+  15   1          TMR1_CONL &= ~(TMR_PRESCALE_SEL(0x07)); // 清除TMR1的预分频配置寄存器
+  16   1          // 配置TMR1的预分频，为32分频，即21MHz / 32 = 0.65625MHz，约0.67us计数一次
+  17   1          // （实际测试和计算得出这个系统时钟是21MHz的，但是还是有些误差，不是准确的21MHz）
+  18   1          TMR1_CONL |= TMR_PRESCALE_SEL(0x05);
+  19   1          TMR1_CONL &= ~(TMR_MODE_SEL(0x03)); // 清除TMR1的模式配置寄存器
+  20   1          TMR1_CONL |= TMR_MODE_SEL(0x01);    // 配置TMR1的模式为计数器模式，最后对系统时钟的脉冲进行计数
+  21   1      
+  22   1          TMR1_CONH |= TMR_PRD_PND(0x01); // 清除TMR1的计数标志位，表示未完成计数
+  23   1          TMR1_CONH |= TMR_PRD_IRQ_EN(1); // 使能TMR1的计数中断
+  24   1      
+  25   1          // 配置TMR1的计数周期
+  26   1          TMR1_PRH = TMR_PERIOD_VAL_H((TMR1_CNT_TIME >> 8) & 0xFF);
+  27   1          TMR1_PRL = TMR_PERIOD_VAL_L((TMR1_CNT_TIME >> 0) & 0xFF);
+  28   1      
+  29   1          // 清除TMR1的计数值
+  30   1          TMR1_CNTL = 0;
+  31   1          TMR1_CNTH = 0;
+  32   1      
+  33   1          TMR1_CONL &= ~(TMR_SOURCE_SEL(0x07)); // 清除TMR1的时钟源配置寄存器
+  34   1          // TMR1_CONL |= TMR_SOURCE_SEL(0x07); // 配置TMR1的时钟源，使用系统时钟
+  35   1          TMR1_CONL |= TMR_SOURCE_SEL(0x05); // 配置TMR1的时钟源，不用任何时钟
+  36   1      
+  37   1          // __EnableIRQ(TMR1_IRQn);                     // 使能中断
+  38   1          __DisableIRQ(TMR1_IRQn); // 禁用中断
+  39   1          IE_EA = 1;               // 打开总中断
+  40   1      }
+  41          
+  42          /**
+  43           * @brief 开启定时器TMR1，开始计时
+  44           */
+  45          void tmr1_enable(void)
+  46          {
+  47   1          // 重新给TMR1配置时钟
+  48   1          TMR1_CONL &= ~(TMR_SOURCE_SEL(0x07)); // 清除定时器的时钟源配置寄存器
+  49   1          TMR1_CONL |= TMR_SOURCE_SEL(0x06);    // 配置定时器的时钟源，使用系统时钟（约21MHz）
+  50   1      
+  51   1          __EnableIRQ(TMR1_IRQn); // 使能中断
+  52   1          IE_EA = 1;              // 打开总中断
+  53   1      }
+C51 COMPILER V9.60.7.0   TIMER1                                                            11/08/2025 16:53:10 PAGE 2   
 
-  54          /**
-  55           * @brief 关闭定时器1，清空计数值
-  56           */
-  57          void tmr1_disable(void)
-  58          {
-  59   1          // 不给定时器提供时钟，让它停止计数
-  60   1          TMR1_CONL &= ~(TMR_SOURCE_SEL(0x07)); // 清除定时器的时钟源配置寄存器
-  61   1          TMR1_CONL |= TMR_SOURCE_SEL(0x05);    // 配置定时器的时钟源，不用任何时钟
-  62   1      
-  63   1          // 清除定时器的计数值
-  64   1          TMR1_CNTL = 0;
-  65   1          TMR1_CNTH = 0;
-  66   1      
-  67   1          __DisableIRQ(TMR1_IRQn); // 关闭中断（不使能中断）
-  68   1      }
-  69          
-  70          // 定时器TMR1中断服务函数
-  71          void TIMR1_IRQHandler(void) interrupt TMR1_IRQn
-  72          {
-  73   1          // 进入中断设置IP，不可删除
-  74   1          __IRQnIPnPush(TMR1_IRQn);
-  75   1      
-  76   1          // ---------------- 用户函数处理 -------------------
-  77   1      
-  78   1          // 周期中断
-  79   1          if (TMR1_CONH & TMR_PRD_PND(0x1))
-  80   1          {
-  81   2              TMR1_CONH |= TMR_PRD_PND(0x1); // 清除pending
-  82   2      
-  83   2              tmr1_cnt++; // 检测温度时使用到
-  84   2          }
-  85   1      
-  86   1          // 退出中断设置IP，不可删除
-  87   1          __IRQnIPnPop(TMR1_IRQn);
-  88   1      }
+  54          
+  55          /**
+  56           * @brief 关闭定时器1，清空计数值
+  57           */
+  58          void tmr1_disable(void)
+  59          {
+  60   1          // 不给定时器提供时钟，让它停止计数
+  61   1          TMR1_CONL &= ~(TMR_SOURCE_SEL(0x07)); // 清除定时器的时钟源配置寄存器
+  62   1          TMR1_CONL |= TMR_SOURCE_SEL(0x05);    // 配置定时器的时钟源，不用任何时钟
+  63   1      
+  64   1          // 清除定时器的计数值
+  65   1          TMR1_CNTL = 0;
+  66   1          TMR1_CNTH = 0;
+  67   1      
+  68   1          __DisableIRQ(TMR1_IRQn); // 关闭中断（不使能中断）
+  69   1      }
+  70          
+  71          // 定时器TMR1中断服务函数
+  72          void TIMR1_IRQHandler(void) interrupt TMR1_IRQn
+  73          {
+  74   1          // 进入中断设置IP，不可删除
+  75   1          __IRQnIPnPush(TMR1_IRQn);
+  76   1      
+  77   1          // ---------------- 用户函数处理 -------------------
+  78   1      
+  79   1          // 周期中断
+  80   1          if (TMR1_CONH & TMR_PRD_PND(0x1))
+  81   1          {
+  82   2              TMR1_CONH |= TMR_PRD_PND(0x1); // 清除pending
+  83   2      
+  84   2              // printf("isr\n");
+  85   2      
+  86   2              tmr1_cnt++; // 检测温度时使用到
+  87   2          }
+  88   1      
+  89   1          // 退出中断设置IP，不可删除
+  90   1          __IRQnIPnPop(TMR1_IRQn);
+  91   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE

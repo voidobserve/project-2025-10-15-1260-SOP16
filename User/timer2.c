@@ -16,7 +16,7 @@ void timer2_config(void)
     __EnableIRQ(TMR2_IRQn); // 使能timer2中断
     IE_EA = 1;              // 使能总中断
 
-    // 设置timer2的计数功能，配置一个频率为1kHz的中断
+    // 设置timer2的计数功能，配置一个频率为 10 kHz的中断
     TMR_ALLCON = TMR2_CNT_CLR(0x1);                               // 清除计数值
     TMR2_PRH = TMR_PERIOD_VAL_H((TIMER2_PEROID_VAL >> 8) & 0xFF); // 周期值
     TMR2_PRL = TMR_PERIOD_VAL_L((TIMER2_PEROID_VAL >> 0) & 0xFF);
@@ -184,8 +184,8 @@ void TIMR2_IRQHandler(void) interrupt TMR2_IRQn
         }
 #endif // rf信号接收 （100us调用一次）
 
-#if 1                                 // 调节PWM占空比
-                                      // if (pwm_duty_change_cnt >= 10) // 1000us,1ms
+#if 1 // 调节PWM占空比
+      // if (pwm_duty_change_cnt >= 10) // 1000us,1ms
         // if (pwm_duty_change_cnt >= 1) // 100us（用遥控器调节，在50%以上调节pwm占空比的时候，灯光会有抖动）
         // if (pwm_duty_change_cnt >= 5) // 500us
         // if (pwm_duty_change_cnt >= 10) // x * 100us （用遥控器调节到50%以下pwm占空比的时候，灯光会有抖动）
@@ -197,40 +197,6 @@ void TIMR2_IRQHandler(void) interrupt TMR2_IRQn
 
             if (0 == flag_is_in_power_on) // 不处于开机缓启动，才使能PWM占空比调节
             {
-#if 0
-                if (flag_is_pwm_channel_0_enable) // 如果 pwm_channel_0 使能，才调节它的占空比
-                {
-                    if (limited_adjust_pwm_duty > c_duty)
-                    {
-                        c_duty++;
-                    }
-                    else if (limited_adjust_pwm_duty < c_duty)
-                    {
-                        c_duty--;
-                    }
-                    else // 如果相等
-                    {
-                    }
-
-                    set_pwm_duty(); // 函数内部会将 c_duty 的值代入相关寄存器中
-                    // set_p15_pwm_duty(c_duty);
-
-                    // if (c_duty <= KNOB_DIMMING_MIN_ADC_VAL) // 小于某个值，直接输出0%占空比，关闭PWM输出，引脚配置为输出模式(尽量小于等于2%的占空比再灭灯)
-                    if (c_duty <= 0) // 小于某个值，直接输出0%占空比，关闭PWM输出，引脚配置为输出模式(尽量小于等于2%的占空比再灭灯)
-                    {
-                        // 直接输出0%的占空比，可能会有些跳动，需要将对应的引脚配置回输出模式，输出低电平
-                        STMR_PWMEN &= ~0x01;          // 不使能PWM0的输出
-                        FOUT_S16 = GPIO_FOUT_AF_FUNC; //
-                        P16 = 1;                      // 高电平为关灯
-                    }
-                    // else if (c_duty >= KNOB_DIMMING_MIN_ADC_VAL) // 大于某个值，再打开PWM，引脚配置回PWM
-                    else if (c_duty >= 0) // 大于某个值，再打开PWM，引脚配置回PWM
-                    {
-                        FOUT_S16 = GPIO_FOUT_STMR0_PWMOUT; // stmr0_pwmout
-                        STMR_PWMEN |= 0x01;                // 使能PWM0的输出
-                    }
-                }
-#endif
                 // =================================================================
                 // pwm_channel_0                                               //
                 // =================================================================

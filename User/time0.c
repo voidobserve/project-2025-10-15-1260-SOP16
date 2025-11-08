@@ -131,6 +131,19 @@ void TIMR0_IRQHandler(void) interrupt TMR0_IRQn
                 }
             }
         } // 风扇状态检测，累计一段时间后更新状态
+
+        // {
+        //     static volatile u32 cnt = 0;
+
+        //     if (TEMP_75 == temp_status)
+        //     {
+        //         cnt++;
+        //         if (cnt >= (u32)TMR1_CNT_5_MINUTES)
+        //         {
+
+        //         }
+        //     }
+        // }
     }
 
     // 退出中断设置IP，不可删除

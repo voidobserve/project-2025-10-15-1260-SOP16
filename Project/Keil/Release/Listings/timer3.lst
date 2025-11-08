@@ -1,0 +1,121 @@
+C51 COMPILER V9.60.7.0   TIMER3                                                            11/08/2025 16:53:11 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIMER3
+OBJECT MODULE PLACED IN .\Release\Objects\timer3.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\timer3.c LARGE OPTIMIZE(9,SIZE) BROWSE INTVECTOR(0X000C) INCD
+                    -IR(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\timer3.lst) OBJECT(.\Rele
+                    -ase\Objects\timer3.obj)
+
+line level    source
+
+   1          #include "my_config.h"
+   2          #include "timer3.h"
+   3          
+   4          /*
+   5              将 timer3 配置为每 935us 产生一次中断的定时器
+   6              935us == 0.000935s，转换成频率：
+   7              1 / 0.00935 == 1069.518716577540106951871657754 Hz
+   8          */
+   9          
+  10          // 实际测试在935us，如果有其他定时器中断，时间会有误差，在910~960us
+  11          #define TIMER3_PERIOD_VAL (SYSCLK / 128 / 1069 - 1) // 周期值=系统时钟/分频/频率 - 1
+  12          
+  13          void timer3_config(void)
+  14          {
+  15   1          __EnableIRQ(TMR3_IRQn); // 使能timer3中断
+  16   1          IE_EA = 1;              // 使能总中断
+  17   1      
+  18   1          // 设置timer3的计数功能，配置一个频率为 kHz的中断
+  19   1          TMR_ALLCON = TMR3_CNT_CLR(0x1);                               // 清除计数值
+  20   1          TMR3_PRH = TMR_PERIOD_VAL_H((TIMER3_PERIOD_VAL >> 8) & 0xFF); // 周期值
+  21   1          TMR3_PRL = TMR_PERIOD_VAL_L((TIMER3_PERIOD_VAL >> 0) & 0xFF);
+  22   1          TMR3_CONH = TMR_PRD_PND(0x1) | TMR_PRD_IRQ_EN(0x1);                          // 计数等于周期时�
+             -��许发生中断
+  23   1          TMR3_CONL = TMR_SOURCE_SEL(0x7) | TMR_PRESCALE_SEL(0x7) | TMR_MODE_SEL(0x1); // 选择系统时钟，1
+             -28分频，计数模式
+  24   1      }
+  25          
+  26          void TIMR3_IRQHandler(void) interrupt TMR3_IRQn
+  27          {
+  28   1          // 进入中断设置IP，不可删除
+  29   1          __IRQnIPnPush(TMR3_IRQn);
+  30   1      
+  31   1          // ---------------- 用户函数处理 -------------------
+  32   1          if (0 == (TMR3_CONH & TMR_PRD_PND(0x1)))
+  33   1          {
+  34   2              // 不是该中断触发（运算之后是非0值，才是该中断触发），直接退出
+  35   2              // 退出中断设置IP，不可删除
+  36   2              __IRQnIPnPop(TMR3_IRQn);
+  37   2              return;
+  38   2          }
+  39   1      
+  40   1          TMR3_CONH |= TMR_PRD_PND(0x1); // 清除中断标志
+  41   1      
+  42   1          //
+  43   1          if (0 == (ADC_CFG0 & 0x01))
+  44   1          {
+  45   2              ADC_CFG0 |= 0x01 << 0; // 开启adc0转换
+  46   2          }
+  47   1      
+  48   1          if (0 == ((ADC_CFG0 >> 1) & 0x01))
+  49   1          {
+  50   2              ADC_CFG0 |= 0x01 << 1; // 开启 adc1 转换
+  51   2          }
+C51 COMPILER V9.60.7.0   TIMER3                                                            11/08/2025 16:53:11 PAGE 2   
+
+  52   1      
+  53   1          {
+  54   2              static u8 cnt;
+  55   2              cnt++;
+  56   2              if (cnt >= 10)
+  57   2              {
+  58   3                  cnt = 0;
+  59   3                  flag_is_time_to_check_engine = 1;
+  60   3      
+  61   3                  // 下面这段代码的中断频率不能比adc中断还要快
+  62   3                  // 每次执行到这里，不用等adc2稳定，因为中断时间间隔比adc2稳定的时�
+             -�还要长
+  63   3                  if (ADC2_STATUS_NONE == cur_adc2_status ||
+  64   3                      (ADC2_STATUS_SEL_FAN_DETECT == cur_adc2_status))
+  65   3                  {
+  66   4                      // adc2切换至检测热敏电阻的通道，并等待adc2稳定
+  67   4                      adc2_channel_sel(ADC_SEL_PIN_GET_TEMP);
+  68   4                      cur_adc2_status = ADC2_STATUS_SEL_GET_TEMP_WAITING;
+  69   4                  }
+  70   3                  else if (ADC2_STATUS_SEL_GET_TEMP_WAITING == cur_adc2_status)
+  71   3                  {
+  72   4                      ADC_CFG0 |= 0x01 << 2;                      // 开启 adc2 转换
+  73   4                      cur_adc2_status = ADC2_STATUS_SEL_GET_TEMP; // 表示当前已经切换到了 检测热敏
+             -电阻的通道
+  74   4                  }
+  75   3                  else if (ADC2_STATUS_SEL_GET_TEMP == cur_adc2_status)
+  76   3                  {
+  77   4                      // adc2切换至检测风扇的通道，并等待adc2稳定
+  78   4                      adc2_channel_sel(ADC_SEL_PIN_FAN_DETECT);
+  79   4                      cur_adc2_status = ADC2_STATUS_SEL_FAN_DETECT_WAITING;
+  80   4                  }
+  81   3                  else if (ADC2_STATUS_SEL_FAN_DETECT_WAITING == cur_adc2_status)
+  82   3                  {
+  83   4                      ADC_CFG0 |= 0x01 << 2;                        // 开启 adc2 转换
+  84   4                      cur_adc2_status = ADC2_STATUS_SEL_FAN_DETECT; // 检测风扇的通道
+  85   4                  }
+  86   3              }
+  87   2          }
+  88   1      
+  89   1          __IRQnIPnPop(TMR3_IRQn);
+  90   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    220    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      1    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
