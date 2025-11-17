@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   PWM                                                               11/17/2025 11:42:48 PAGE 1   
+C51 COMPILER V9.60.7.0   PWM                                                               11/17/2025 14:11:40 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE PWM
@@ -62,7 +62,7 @@ line level    source
   45   1          // P15 15脚 作为第2路PWM输出
   46   1          STMR_CNTCLR |= STMR_1_CNT_CLR(0x1);                         // 清空计数值
   47   1          STMR1_PSC = STMR_PRESCALE_VAL(0x07);                        // 预分频
-C51 COMPILER V9.60.7.0   PWM                                                               11/17/2025 11:42:48 PAGE 2   
+C51 COMPILER V9.60.7.0   PWM                                                               11/17/2025 14:11:40 PAGE 2   
 
   48   1          STMR1_PRH = STMR_PRD_VAL_H((STMR1_PEROID_VAL >> 8) & 0xFF); // 周期值
   49   1          STMR1_PRL = STMR_PRD_VAL_L((STMR1_PEROID_VAL >> 0) & 0xFF);
@@ -126,7 +126,7 @@ line level    source
  105           * @brief 获取第一路PWM的运行状态
  106           *
  107           * @return u8 0--pwm关闭，1--pwm开启
-C51 COMPILER V9.60.7.0   PWM                                                               11/17/2025 11:42:48 PAGE 3   
+C51 COMPILER V9.60.7.0   PWM                                                               11/17/2025 14:11:40 PAGE 3   
 
  108           */
  109          u8 get_pwm_channel_0_status(void)
@@ -190,7 +190,7 @@ line level    source
  167   1          // 直接输出0%的占空比，可能会有些跳动，需要将对应的引脚配置回输出模式
  168   1          STMR_PWMEN &= ~(0x01 << 1); // 不使能PWM1的输出
  169   1      
-C51 COMPILER V9.60.7.0   PWM                                                               11/17/2025 11:42:48 PAGE 4   
+C51 COMPILER V9.60.7.0   PWM                                                               11/17/2025 14:11:40 PAGE 4   
 
  170   1      #if USE_MY_TEST_PIN
                   FOUT_S05 = GPIO_FOUT_AF_FUNC; //;
@@ -254,7 +254,7 @@ line level    source
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-C51 COMPILER V9.60.7.0   PWM                                                               11/17/2025 11:42:48 PAGE 5   
+C51 COMPILER V9.60.7.0   PWM                                                               11/17/2025 14:11:40 PAGE 5   
 
    CODE SIZE        =    356    ----
    CONSTANT SIZE    =   ----    ----

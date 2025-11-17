@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   TIMER3                                                            11/17/2025 11:42:49 PAGE 1   
+C51 COMPILER V9.60.7.0   TIMER3                                                            11/17/2025 14:11:41 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIMER3
@@ -62,7 +62,7 @@ line level    source
   48   2              {
   49   3                  flag_is_time_to_sync_adc_status = 0; 
   50   3                  cur_adc_status = ADC_STATUS_NONE; // 给下面的代码检测到，切换通道
-C51 COMPILER V9.60.7.0   TIMER3                                                            11/17/2025 11:42:49 PAGE 2   
+C51 COMPILER V9.60.7.0   TIMER3                                                            11/17/2025 14:11:41 PAGE 2   
 
   51   3              }
   52   2      
@@ -126,7 +126,7 @@ line level    source
                   }
               #endif
  109   1      
-C51 COMPILER V9.60.7.0   TIMER3                                                            11/17/2025 11:42:49 PAGE 3   
+C51 COMPILER V9.60.7.0   TIMER3                                                            11/17/2025 14:11:41 PAGE 3   
 
  110   1      #if 1
  111   1          // 每次执行到这里，不用等 adc0 稳定，因为中断时间间隔比 adc0 稳定的时间还
@@ -190,7 +190,7 @@ line level    source
                       // adc0 切换至检测发动机的通道，并等待 adc0 稳定
                       adc_channel_sel(ADC_SEL_PIN_ENGINE);
                       cur_adc_status = ADC_STATUS_SEL_ENGINE_WAITING;
-C51 COMPILER V9.60.7.0   TIMER3                                                            11/17/2025 11:42:49 PAGE 4   
+C51 COMPILER V9.60.7.0   TIMER3                                                            11/17/2025 14:11:41 PAGE 4   
 
                   }
                   else if (ADC_STATUS_SEL_ENGINE_WAITING == cur_adc_status)

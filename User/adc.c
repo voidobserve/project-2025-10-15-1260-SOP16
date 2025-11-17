@@ -415,6 +415,7 @@ void temperature_scan(void)
         if (cnt >= 10)
         {
             cnt = 0;
+            // 测试的时候，如果引脚悬空，可能会执行不到这里：
             temp_status = TEMP_75; // 状态标志设置为超过75摄氏度   USER_TO_DO  在测试时会屏蔽掉
         }
         else

@@ -38,7 +38,9 @@ void according_pin9_to_adjust_pwm(void)
     static volatile u8 flag_is_sub_power2 = 0; // 标志位，是否要连续减功率
     static volatile bit flag_is_add_power = 0; // 标志位，是否要连续增功率
 
-    volatile u32 adc_pin_9_avg = 0; // 存放平均值
+    volatile bit flag_is_engine_unstable = 0; // 标志位，是否检测到了发动机功率不稳定，只在该函数内使用
+
+    volatile u32 adc_pin_9_avg = 0;             // 存放平均值
     volatile u16 adc_val = adc_val_from_engine; // adc_val_from_engine 由adc中断更新
 
     if (filter_buff[0] == 0xFFFF) // 如果是第一次检测，让数组内所有元素都变为第一次采集的数据，方便快速作出变化
@@ -145,6 +147,8 @@ void according_pin9_to_adjust_pwm(void)
             {
                 limited_pwm_duty_due_to_unstable_engine = PWM_DUTY_50_PERCENT;
             }
+
+            flag_is_engine_unstable = 1;
         }
         else if (over_drive_status == 0)
         {
@@ -178,6 +182,8 @@ void according_pin9_to_adjust_pwm(void)
             if (limited_pwm_duty_due_to_unstable_engine > PWM_DUTY_50_PERCENT)
             {
                 limited_pwm_duty_due_to_unstable_engine -= 2;
+
+                flag_is_engine_unstable = 1;
             }
             else if (limited_pwm_duty_due_to_unstable_engine < PWM_DUTY_50_PERCENT)
             {
@@ -208,6 +214,25 @@ void according_pin9_to_adjust_pwm(void)
             {
                 limited_pwm_duty_due_to_unstable_engine = PWM_DUTY_30_PERCENT;
             }
+
+            flag_is_engine_unstable = 1;
         }
+    }
+
+    if (flag_is_engine_unstable)
+    {
+        /*
+            如果前面检测到了发动机功率不稳定，这里立即更新pwm占空比
+
+            实际测试这个代码块用时 126 ~ 139 us
+        */
+        // flag_is_engine_unstable = 0; // 局部变量，到最后可以不清零
+        adjust_pwm_channel_0_duty = get_pwm_channel_x_adjust_duty(expect_adjust_pwm_channel_0_duty);
+        adjust_pwm_channel_1_duty = get_pwm_channel_x_adjust_duty(expect_adjust_pwm_channel_1_duty);
+        cur_pwm_channel_0_duty = adjust_pwm_channel_0_duty;
+        cur_pwm_channel_1_duty = adjust_pwm_channel_1_duty;
+
+        set_pwm_channel_0_duty(cur_pwm_channel_0_duty);
+        set_pwm_channel_1_duty(cur_pwm_channel_1_duty);
     }
 }

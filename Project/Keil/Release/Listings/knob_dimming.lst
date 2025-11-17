@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   KNOB_DIMMING                                                      11/17/2025 11:42:48 PAGE 1   
+C51 COMPILER V9.60.7.0   KNOB_DIMMING                                                      11/17/2025 14:11:40 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE KNOB_DIMMING
@@ -62,7 +62,7 @@ line level    source
              - */
   44   2              {
   45   3                  /*
-C51 COMPILER V9.60.7.0   KNOB_DIMMING                                                      11/17/2025 11:42:48 PAGE 2   
+C51 COMPILER V9.60.7.0   KNOB_DIMMING                                                      11/17/2025 14:11:40 PAGE 2   
 
   46   3                      计算验证，这里的ad值如果只相差1，占空比的值也只相差1
   47   3                  */

@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 11:42:48 PAGE 1   
+C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 14:11:39 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
@@ -62,7 +62,7 @@ line level    source
                   // FOUT_S13 |= GPIO_FOUT_UART0_TX;              // 配置为UART0_TX
                   // UART0_BAUD1 = (USER_UART0_BAUD >> 8) & 0xFF; // 配置波特率高八位
                   // UART0_BAUD0 = USER_UART0_BAUD & 0xFF;        // 配置波特率低八位
-C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 11:42:48 PAGE 2   
+C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 14:11:39 PAGE 2   
 
                   // UART0_CON0 = UART_STOP_BIT(0x0) |
                   //              UART_EN(0x1); // 8bit数据，1bit停止位
@@ -126,7 +126,7 @@ line level    source
              -��射）
  109   1          WDT_KEY = 0xBB;  // 写一个无效的数据，触发写保护
  110   1      
-C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 11:42:48 PAGE 3   
+C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 14:11:39 PAGE 3   
 
  111   1      #if USE_MY_DEBUG // 打印串口配置
                   // 初始化打印
@@ -190,7 +190,7 @@ line level    source
  170   1          limited_pwm_duty_due_to_temp = MAX_PWM_DUTY;
  171   1          limited_pwm_duty_due_to_unstable_engine = MAX_PWM_DUTY;
  172   1      
-C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 11:42:48 PAGE 4   
+C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 14:11:39 PAGE 4   
 
  173   1      // ===================================================================
  174   1      #if 1 // 开机缓慢启动（PWM信号变化平缓）
@@ -254,7 +254,7 @@ line level    source
  227   2              // set_pwm_duty(); // 将 c_duty 写入pwm对应的寄存器
  228   2              // set_p15_pwm_duty(c_duty);
  229   2      
-C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 11:42:48 PAGE 5   
+C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 14:11:39 PAGE 5   
 
  230   2      #if USE_MY_DEBUG
                       // printf("power_on_duty %u\n", c_duty);
@@ -318,7 +318,7 @@ line level    source
  286   2      
  287   2              //         // printf("__LINE__ %u\n", __LINE__);
  288   2              //         // printf("val %u\n", ADC_OVER_DRIVE_VAL);
-C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 11:42:48 PAGE 6   
+C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 14:11:39 PAGE 6   
 
  289   2              //         // printf("val %u\n", (u16)adc_val_from_fan);
  290   2              //         // printf("val %u\n", (u16)adc_val_from_temp);
