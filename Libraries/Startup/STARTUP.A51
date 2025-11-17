@@ -120,10 +120,10 @@ DPH     DATA    83H
                 DS      1
 
                 EXTRN CODE (?C_START)
-                PUBLIC  ?C_STARTUP
+                PUBLIC  ?C_STARTUP          ; 声明公共符号
 
-                CSEG    AT      0000H
-?C_STARTUP:     LJMP    STARTUP1
+                CSEG    AT      0000H       ; 8051复位向量地址
+?C_STARTUP:     LJMP    STARTUP1            ; 跳转到实际的复位程序入口，最后会跳转到主函数main()
 
                 RSEG    ?C_C51STARTUP
 

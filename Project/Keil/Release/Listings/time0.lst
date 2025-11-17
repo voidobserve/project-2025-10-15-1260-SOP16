@@ -1,11 +1,11 @@
-C51 COMPILER V9.60.7.0   TIME0                                                             11/08/2025 16:53:10 PAGE 1   
+C51 COMPILER V9.60.7.0   TIME0                                                             11/17/2025 11:42:48 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIME0
 OBJECT MODULE PLACED IN .\Release\Objects\time0.obj
-COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\time0.c LARGE OPTIMIZE(9,SIZE) BROWSE INTVECTOR(0X000C) INCDI
-                    -R(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\time0.lst) OBJECT(.\Releas
-                    -e\Objects\time0.obj)
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\time0.c LARGE OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) INCD
+                    -IR(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\time0.lst) OBJECT(.\Relea
+                    -se\Objects\time0.obj)
 
 line level    source
 
@@ -62,7 +62,7 @@ line level    source
   46          //     TMR0_CONL |= TMR_SOURCE_SEL(0x05);    // 配置定时器的时钟源，不用任何时钟
   47          
   48          //     // 清除定时器的计数值
-C51 COMPILER V9.60.7.0   TIME0                                                             11/08/2025 16:53:10 PAGE 2   
+C51 COMPILER V9.60.7.0   TIME0                                                             11/17/2025 11:42:48 PAGE 2   
 
   49          //     TMR0_CNTL = 0;
   50          //     TMR0_CNTH = 0;
@@ -126,7 +126,7 @@ line level    source
  107   2              { // 风扇状态检测，累计一段时间后更新状态
  108   3                  static u16 fan_normal_cnt = 0;
  109   3                  static u16 fan_err_cnt = 0;
-C51 COMPILER V9.60.7.0   TIME0                                                             11/08/2025 16:53:10 PAGE 3   
+C51 COMPILER V9.60.7.0   TIME0                                                             11/17/2025 11:42:48 PAGE 3   
 
  110   3      
  111   3                  if (flag_tim_scan_fan_is_err) // 如果检测到了风扇异常
@@ -173,7 +173,7 @@ line level    source
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    228    ----
+   CODE SIZE        =    241    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =      7    ----
    PDATA SIZE       =   ----    ----

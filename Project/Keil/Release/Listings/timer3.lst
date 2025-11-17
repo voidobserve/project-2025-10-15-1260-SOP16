@@ -1,11 +1,11 @@
-C51 COMPILER V9.60.7.0   TIMER3                                                            11/08/2025 16:53:11 PAGE 1   
+C51 COMPILER V9.60.7.0   TIMER3                                                            11/17/2025 11:42:49 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIMER3
 OBJECT MODULE PLACED IN .\Release\Objects\timer3.obj
-COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\timer3.c LARGE OPTIMIZE(9,SIZE) BROWSE INTVECTOR(0X000C) INCD
-                    -IR(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\timer3.lst) OBJECT(.\Rele
-                    -ase\Objects\timer3.obj)
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\timer3.c LARGE OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) INC
+                    -DIR(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\timer3.lst) OBJECT(.\Rel
+                    -ease\Objects\timer3.obj)
 
 line level    source
 
@@ -50,67 +50,178 @@ line level    source
   37   2              return;
   38   2          }
   39   1      
-  40   1          TMR3_CONH |= TMR_PRD_PND(0x1); // 清除中断标志
+  40   1          TMR3_CONH |= TMR_PRD_PND(0x1); // 清除中断标志 
   41   1      
-  42   1          //
-  43   1          if (0 == (ADC_CFG0 & 0x01))
-  44   1          {
-  45   2              ADC_CFG0 |= 0x01 << 0; // 开启adc0转换
-  46   2          }
-  47   1      
-  48   1          if (0 == ((ADC_CFG0 >> 1) & 0x01))
-  49   1          {
-  50   2              ADC_CFG0 |= 0x01 << 1; // 开启 adc1 转换
-  51   2          }
-C51 COMPILER V9.60.7.0   TIMER3                                                            11/08/2025 16:53:11 PAGE 2   
+  42   1          // 这段代码必须要放在切换通道前面，否则时序和逻辑会有问题
+  43   1          {
+  44   2              static volatile u8 cnt;
+  45   2              static volatile u8 flag_is_time_to_sync_adc_status = 1; // 标志位，是否要同步adc的通道
+             -，更新adc状态
+  46   2              cnt++;
+  47   2              if (cnt >= 8 && flag_is_time_to_sync_adc_status)
+  48   2              {
+  49   3                  flag_is_time_to_sync_adc_status = 0; 
+  50   3                  cur_adc_status = ADC_STATUS_NONE; // 给下面的代码检测到，切换通道
+C51 COMPILER V9.60.7.0   TIMER3                                                            11/17/2025 11:42:49 PAGE 2   
 
-  52   1      
-  53   1          {
-  54   2              static u8 cnt;
-  55   2              cnt++;
-  56   2              if (cnt >= 10)
-  57   2              {
-  58   3                  cnt = 0;
-  59   3                  flag_is_time_to_check_engine = 1;
-  60   3      
-  61   3                  // 下面这段代码的中断频率不能比adc中断还要快
-  62   3                  // 每次执行到这里，不用等adc2稳定，因为中断时间间隔比adc2稳定的时�
+  51   3              }
+  52   2      
+  53   2              if (cnt >= 10)
+  54   2              {
+  55   3                  cnt = 0;
+  56   3                  flag_is_time_to_check_engine = 1;    // 到了检测发动机的时间，让主函数扫描到
+             -，调用
+  57   3                  flag_is_time_to_sync_adc_status = 1; // 等到下一个周期，同步adc0的通道
+  58   3              }
+  59   2          }
+  60   1      
+  61   1      #if 0
+                  //
+                  if (0 == (ADC_CFG0 & 0x01))
+                  {
+                      ADC_CFG0 |= 0x01 << 0; // 开启adc0转换
+                  }
+              
+                  if (0 == ((ADC_CFG0 >> 1) & 0x01))
+                  {
+                      ADC_CFG0 |= 0x01 << 1; // 开启 adc1 转换
+                  }
+              
+                  {
+                      static u8 cnt;
+                      cnt++;
+                      if (cnt >= 10)
+                      {
+                          cnt = 0;
+                          flag_is_time_to_check_engine = 1;
+              
+                          // 下面这段代码的中断频率不能比adc中断还要快
+                          // 每次执行到这里，不用等adc2稳定，因为中断时间间隔比adc2稳定的时�
              -�还要长
-  63   3                  if (ADC2_STATUS_NONE == cur_adc2_status ||
-  64   3                      (ADC2_STATUS_SEL_FAN_DETECT == cur_adc2_status))
-  65   3                  {
-  66   4                      // adc2切换至检测热敏电阻的通道，并等待adc2稳定
-  67   4                      adc2_channel_sel(ADC_SEL_PIN_GET_TEMP);
-  68   4                      cur_adc2_status = ADC2_STATUS_SEL_GET_TEMP_WAITING;
-  69   4                  }
-  70   3                  else if (ADC2_STATUS_SEL_GET_TEMP_WAITING == cur_adc2_status)
-  71   3                  {
-  72   4                      ADC_CFG0 |= 0x01 << 2;                      // 开启 adc2 转换
-  73   4                      cur_adc2_status = ADC2_STATUS_SEL_GET_TEMP; // 表示当前已经切换到了 检测热敏
+                          if (ADC2_STATUS_NONE == cur_adc2_status ||
+                              (ADC2_STATUS_SEL_FAN_DETECT == cur_adc2_status))
+                          {
+                              // adc2切换至检测热敏电阻的通道，并等待adc2稳定
+                              adc2_channel_sel(ADC_SEL_PIN_GET_TEMP);
+                              cur_adc2_status = ADC2_STATUS_SEL_GET_TEMP_WAITING;
+                          }
+                          else if (ADC2_STATUS_SEL_GET_TEMP_WAITING == cur_adc2_status)
+                          {
+                              ADC_CFG0 |= 0x01 << 2;                      // 开启 adc2 转换
+                              cur_adc2_status = ADC2_STATUS_SEL_GET_TEMP; // 表示当前已经切换到了 检测热敏
              -电阻的通道
-  74   4                  }
-  75   3                  else if (ADC2_STATUS_SEL_GET_TEMP == cur_adc2_status)
-  76   3                  {
-  77   4                      // adc2切换至检测风扇的通道，并等待adc2稳定
-  78   4                      adc2_channel_sel(ADC_SEL_PIN_FAN_DETECT);
-  79   4                      cur_adc2_status = ADC2_STATUS_SEL_FAN_DETECT_WAITING;
-  80   4                  }
-  81   3                  else if (ADC2_STATUS_SEL_FAN_DETECT_WAITING == cur_adc2_status)
-  82   3                  {
-  83   4                      ADC_CFG0 |= 0x01 << 2;                        // 开启 adc2 转换
-  84   4                      cur_adc2_status = ADC2_STATUS_SEL_FAN_DETECT; // 检测风扇的通道
-  85   4                  }
-  86   3              }
-  87   2          }
-  88   1      
-  89   1          __IRQnIPnPop(TMR3_IRQn);
-  90   1      }
+                          }
+                          else if (ADC2_STATUS_SEL_GET_TEMP == cur_adc2_status)
+                          {
+                              // adc2切换至检测风扇的通道，并等待adc2稳定
+                              adc2_channel_sel(ADC_SEL_PIN_FAN_DETECT);
+                              cur_adc2_status = ADC2_STATUS_SEL_FAN_DETECT_WAITING;
+                          }
+                          else if (ADC2_STATUS_SEL_FAN_DETECT_WAITING == cur_adc2_status)
+                          {
+                              ADC_CFG0 |= 0x01 << 2;                        // 开启 adc2 转换
+                              cur_adc2_status = ADC2_STATUS_SEL_FAN_DETECT; // 检测风扇的通道
+                          }
+                      }
+                  }
+              #endif
+ 109   1      
+C51 COMPILER V9.60.7.0   TIMER3                                                            11/17/2025 11:42:49 PAGE 3   
+
+ 110   1      #if 1
+ 111   1          // 每次执行到这里，不用等 adc0 稳定，因为中断时间间隔比 adc0 稳定的时间还
+             -要长
+ 112   1          if (ADC_STATUS_NONE == cur_adc_status ||
+ 113   1              (ADC_STATUS_SEL_FAN_DETECT == cur_adc_status))
+ 114   1          {
+ 115   2              // adc0 切换至检测发动机的通道，并等待 adc0 稳定
+ 116   2              adc_channel_sel(ADC_SEL_PIN_ENGINE);
+ 117   2              cur_adc_status = ADC_STATUS_SEL_ENGINE_WAITING;
+ 118   2          }
+ 119   1          else if (ADC_STATUS_SEL_ENGINE_WAITING == cur_adc_status)
+ 120   1          {
+ 121   2              ADC_CFG0 |= 0x01 << 0;                  // 开启adc0转换
+ 122   2              cur_adc_status = ADC_STATUS_SEL_ENGINE; // 表示当前已经切换到了 检测发动机的通道
+ 123   2          }
+ 124   1          // else if (ADC_STATUS_SEL_ENGINE == cur_adc_status)
+ 125   1          else if (ADC_STATUS_SEL_ENGINE_DONE == cur_adc_status)
+ 126   1          {
+ 127   2              // adc0 切换至检测旋钮的通道，并等待 adc0 稳定
+ 128   2              adc_channel_sel(ADC_SEL_PIN_KNOB);
+ 129   2              cur_adc_status = ADC_STATUS_SEL_KNOB_WAITING;
+ 130   2          }
+ 131   1          else if (ADC_STATUS_SEL_KNOB_WAITING == cur_adc_status)
+ 132   1          {
+ 133   2              ADC_CFG0 |= 0x01 << 0;                // 开启adc0转换
+ 134   2              cur_adc_status = ADC_STATUS_SEL_KNOB; // 检测旋钮的通道 
+ 135   2          }
+ 136   1          else if (ADC_STATUS_SEL_KNOB == cur_adc_status)
+ 137   1          { 
+ 138   2              // adc0 切换至检测温度的通道，并等待 adc0 稳定
+ 139   2              adc_channel_sel(ADC_SEL_PIN_TEMP);
+ 140   2              cur_adc_status = ADC_STATUS_SEL_GET_TEMP_WAITING;
+ 141   2          }
+ 142   1          else if (ADC_STATUS_SEL_GET_TEMP_WAITING == cur_adc_status)
+ 143   1          {
+ 144   2              ADC_CFG0 |= 0x01 << 0;                    // 开启adc0转换
+ 145   2              cur_adc_status = ADC_STATUS_SEL_GET_TEMP; // 检测温度的通道 
+ 146   2          }
+ 147   1          else if (ADC_STATUS_SEL_GET_TEMP == cur_adc_status)
+ 148   1          {
+ 149   2              // adc0 切换至检测风扇的通道，并等待 adc0 稳定
+ 150   2              adc_channel_sel(ADC_SEL_PIN_FAN);
+ 151   2              cur_adc_status = ADC_STATUS_SEL_FAN_DETECT_WAITING; 
+ 152   2          }
+ 153   1          else if (ADC_STATUS_SEL_FAN_DETECT_WAITING == cur_adc_status)
+ 154   1          {
+ 155   2              ADC_CFG0 |= 0x01 << 0;                      // 开启adc0转换
+ 156   2              cur_adc_status = ADC_STATUS_SEL_FAN_DETECT; // 检测风扇的通道
+ 157   2          }
+ 158   1      #endif
+ 159   1      
+ 160   1      #if 0
+                  // 每次执行到这里，不用等 adc0 稳定，因为中断时间间隔比 adc0 稳定的时间还
+             -要长
+                  if (ADC_STATUS_NONE == cur_adc_status ||
+                      (ADC_STATUS_SEL_GET_TEMP == cur_adc_status))
+                  {
+                      P05 = 0;
+              
+                      // adc0 切换至检测发动机的通道，并等待 adc0 稳定
+                      adc_channel_sel(ADC_SEL_PIN_ENGINE);
+                      cur_adc_status = ADC_STATUS_SEL_ENGINE_WAITING;
+C51 COMPILER V9.60.7.0   TIMER3                                                            11/17/2025 11:42:49 PAGE 4   
+
+                  }
+                  else if (ADC_STATUS_SEL_ENGINE_WAITING == cur_adc_status)
+                  {
+                      ADC_CFG0 |= 0x01 << 0;                  // 开启adc0转换
+                      cur_adc_status = ADC_STATUS_SEL_ENGINE; // 表示当前已经切换到了 检测发动机的通道
+                      P02 = 1;
+                  }
+                  else if (ADC_STATUS_SEL_ENGINE_DONE == cur_adc_status)
+                  {
+                      P02 = 0;
+                      // adc0 切换至检测温度的通道，并等待 adc0 稳定
+                      adc_channel_sel(ADC_SEL_PIN_TEMP);
+                      cur_adc_status = ADC_STATUS_SEL_GET_TEMP_WAITING;
+                  }
+                  else if (ADC_STATUS_SEL_GET_TEMP_WAITING == cur_adc_status)
+                  {
+                      ADC_CFG0 |= 0x01 << 0;                    // 开启adc0转换
+                      cur_adc_status = ADC_STATUS_SEL_GET_TEMP; // 检测温度的通道
+                      P05 = 1;
+                  }
+              #endif
+ 191   1      
+ 192   1          __IRQnIPnPop(TMR3_IRQn);
+ 193   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    220    ----
+   CODE SIZE        =    298    ----
    CONSTANT SIZE    =   ----    ----
-   XDATA SIZE       =      1    ----
+   XDATA SIZE       =      2    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----

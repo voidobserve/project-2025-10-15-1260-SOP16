@@ -114,15 +114,35 @@ void main(void)
     my_debug_config();
     printf("sys reset\n");
 
+    // P01 配置为输出模式
+    P0_MD0 &= ~(0x03 << 2);
+    P0_MD0 |= 0x01 << 2;
+    FOUT_S01 = GPIO_FOUT_AF_FUNC;
+    P01 = 0;
+
     // P02 配置为输出模式
     P0_MD0 &= ~(0x03 << 4); // 清空对应的寄存器配置
     P0_MD0 |= 0x01 << 4;    // 输出模式
     FOUT_S02 = GPIO_FOUT_AF_FUNC;
+    P02 = 0;
+
+    // P05 配置为输出模式
+    P0_MD1 &= ~(0x03 << 2);
+    P0_MD1 |= 0x01 << 2;
+    FOUT_S05 = GPIO_FOUT_AF_FUNC;
+    P05 = 0;
+
+    // P06 配置为输出模式
+    P0_MD1 &= ~(0x03 << 4);
+    P0_MD1 |= 0x01 << 4;
+    FOUT_S06 = GPIO_FOUT_AF_FUNC;
+    P06 = 0;
 
     // P21 配置为输出模式
     P2_MD0 &= ~(0x03 << 2);
     P2_MD0 |= 0x01 << 2; // 输出模式
     FOUT_S21 = GPIO_FOUT_AF_FUNC;
+    P21 = 0;
 
     // 输出模式：
     // P1_MD0 &= (GPIO_P13_MODE_SEL(0x3));

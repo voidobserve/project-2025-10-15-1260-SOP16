@@ -1,11 +1,11 @@
-C51 COMPILER V9.60.7.0   ENGINE                                                            11/08/2025 16:53:11 PAGE 1   
+C51 COMPILER V9.60.7.0   ENGINE                                                            11/17/2025 11:42:49 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE ENGINE
 OBJECT MODULE PLACED IN .\Release\Objects\engine.obj
-COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\engine.c LARGE OPTIMIZE(9,SIZE) BROWSE INTVECTOR(0X000C) INCD
-                    -IR(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\engine.lst) OBJECT(.\Rele
-                    -ase\Objects\engine.obj)
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\engine.c LARGE OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) INC
+                    -DIR(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\engine.lst) OBJECT(.\Rel
+                    -ease\Objects\engine.obj)
 
 line level    source
 
@@ -62,7 +62,7 @@ line level    source
   45   1          {
   46   2              u16 i = 0;
   47   2              for (; i < ARRAY_SIZE(filter_buff); i++)
-C51 COMPILER V9.60.7.0   ENGINE                                                            11/08/2025 16:53:11 PAGE 2   
+C51 COMPILER V9.60.7.0   ENGINE                                                            11/17/2025 11:42:49 PAGE 2   
 
   48   2              {
   49   3                  filter_buff[i] = adc_val;
@@ -126,7 +126,7 @@ line level    source
  107   3                  else
  108   3                  {
  109   4                      if (over_drive_status)
-C51 COMPILER V9.60.7.0   ENGINE                                                            11/08/2025 16:53:11 PAGE 3   
+C51 COMPILER V9.60.7.0   ENGINE                                                            11/17/2025 11:42:49 PAGE 3   
 
  110   4                          over_drive_status--;
  111   4                  }
@@ -190,7 +190,7 @@ line level    source
  164   1          {
  165   2              // 锁定最大的占空比为50%，并且给相应标志位置一
  166   2              if (flag_is_pwm_sub_time_comes) // pwm占空比递减时间到来
-C51 COMPILER V9.60.7.0   ENGINE                                                            11/08/2025 16:53:11 PAGE 4   
+C51 COMPILER V9.60.7.0   ENGINE                                                            11/17/2025 11:42:49 PAGE 4   
 
  167   2              {
  168   3                  flag_is_pwm_sub_time_comes = 0;
@@ -242,7 +242,7 @@ line level    source
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    836    ----
+   CODE SIZE        =   1108    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =    616       8
    PDATA SIZE       =   ----    ----

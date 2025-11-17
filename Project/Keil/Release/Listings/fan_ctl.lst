@@ -1,11 +1,11 @@
-C51 COMPILER V9.60.7.0   FAN_CTL                                                           11/08/2025 16:53:11 PAGE 1   
+C51 COMPILER V9.60.7.0   FAN_CTL                                                           11/17/2025 11:42:49 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE FAN_CTL
 OBJECT MODULE PLACED IN .\Release\Objects\fan_ctl.obj
-COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\fan_ctl.c LARGE OPTIMIZE(9,SIZE) BROWSE INTVECTOR(0X000C) INC
-                    -DIR(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\fan_ctl.lst) OBJECT(.\Re
-                    -lease\Objects\fan_ctl.obj)
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\fan_ctl.c LARGE OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) IN
+                    -CDIR(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\fan_ctl.lst) OBJECT(.\R
+                    -elease\Objects\fan_ctl.obj)
 
 line level    source
 

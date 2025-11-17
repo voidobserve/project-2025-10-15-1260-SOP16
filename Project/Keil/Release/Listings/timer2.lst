@@ -1,11 +1,11 @@
-C51 COMPILER V9.60.7.0   TIMER2                                                            11/08/2025 16:53:10 PAGE 1   
+C51 COMPILER V9.60.7.0   TIMER2                                                            11/17/2025 11:42:48 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIMER2
 OBJECT MODULE PLACED IN .\Release\Objects\timer2.obj
-COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\timer2.c LARGE OPTIMIZE(9,SIZE) BROWSE INTVECTOR(0X000C) INCD
-                    -IR(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\timer2.lst) OBJECT(.\Rele
-                    -ase\Objects\timer2.obj)
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\timer2.c LARGE OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) INC
+                    -DIR(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\timer2.lst) OBJECT(.\Rel
+                    -ease\Objects\timer2.obj)
 
 line level    source
 
@@ -62,7 +62,7 @@ line level    source
   48   2              // if (pwm_duty_sub_cnt >= 50)
   49   2              {
   50   3                  pwm_duty_sub_cnt = 0;
-C51 COMPILER V9.60.7.0   TIMER2                                                            11/08/2025 16:53:10 PAGE 2   
+C51 COMPILER V9.60.7.0   TIMER2                                                            11/17/2025 11:42:48 PAGE 2   
 
   51   3                  flag_is_pwm_sub_time_comes = 1;
   52   3              }
@@ -126,7 +126,7 @@ line level    source
  104   6      
  105   6                              flag_is_enable_recv = 1;
  106   6                          }
-C51 COMPILER V9.60.7.0   TIMER2                                                            11/08/2025 16:53:10 PAGE 3   
+C51 COMPILER V9.60.7.0   TIMER2                                                            11/17/2025 11:42:48 PAGE 3   
 
  107   5                          else if (flag_is_enable_recv &&
  108   5                                   low_level_cnt >= 2 && low_level_cnt < 7 &&
@@ -190,7 +190,7 @@ line level    source
  162   4                      high_level_cnt++;
  163   4                  }
  164   3      
-C51 COMPILER V9.60.7.0   TIMER2                                                            11/08/2025 16:53:10 PAGE 4   
+C51 COMPILER V9.60.7.0   TIMER2                                                            11/17/2025 11:42:48 PAGE 4   
 
  165   3                  if (__flag_is_recved_data) //
  166   3                  {
@@ -254,7 +254,7 @@ line level    source
  219   4                      else if (adjust_pwm_channel_1_duty < cur_pwm_channel_1_duty)
  220   4                      {
  221   5                          cur_pwm_channel_1_duty--;
-C51 COMPILER V9.60.7.0   TIMER2                                                            11/08/2025 16:53:10 PAGE 5   
+C51 COMPILER V9.60.7.0   TIMER2                                                            11/17/2025 11:42:48 PAGE 5   
 
  222   5                      }
  223   4      
@@ -299,7 +299,7 @@ line level    source
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    714    ----
+   CODE SIZE        =    835    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =     15    ----
    PDATA SIZE       =   ----    ----

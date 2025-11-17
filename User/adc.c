@@ -12,9 +12,13 @@ volatile u16 adc_val_from_fan;    // 存放 检测风扇一侧 采集到的ad值
 volatile bit flag_tim_scan_fan_is_err = 0;      // 标志位，由定时器扫描并累计时间，表示当前风扇是否异常
 volatile u8 cur_fan_status = FAN_STATUS_NORMAL; // 当前风扇状态
 
-volatile u8 cur_adc2_status = ADC2_STATUS_NONE; // 状态机，表示当前adc2的状态
+volatile u8 cur_adc_status = ADC_STATUS_NONE; // 状态机，表示当前adc的状态
+// volatile u8 cur_adc2_status = ADC2_STATUS_NONE; // 状态机，表示当前adc2的状态
 
 // volatile bit flag_is_pin_9_vol_bounce = 0; // 标志位，9脚电压是否发生了跳动
+
+volatile u8 adc_engine_val_buff_index = 0;
+volatile u16 adc_engine_val_buff[16] = {0xFFFF};
 
 // adc相关的引脚配置
 void adc_pin_config(void)
@@ -128,6 +132,7 @@ void adc_pin_config(void)
 
 void adc_config(void)
 {
+#if 0
     __EnableIRQ(ADC_IRQn); // 使能ADC中断
     IE_EA = 1;             // 使能总中断
 
@@ -165,10 +170,16 @@ void adc_config(void)
                 ADC_CHAN1_EN(0x01) |
                 ADC_CHAN2_EN(0x01) |
                 ADC_EN(0x01); // 使能adc
+#endif
 
-    delay_ms(1); // 等待adc稳定
+    __EnableIRQ(ADC_IRQn);    // 使能ADC中断
+    IE_EA = 1;                // 使能总中断
+    ADC_CFG1 |= (0x0F << 3) | // ADC时钟分频为16分频，为系统时钟/16
+                (0x01 << 0);  // ADC0 通道中断使能
+    delay_ms(1);              // 等待adc稳定
 }
 
+#if 0
 // 配置adc0，adc0只选择检测发动机的通道
 void adc0_channel_sel(void)
 {
@@ -184,13 +195,16 @@ void adc1_channel_sel(void)
     ADC_CHS1 &= ~(0x1F << 0);         // 清空 adc1 选择的模拟通道
     ADC_CHS1 = ADC_ANALOG_CHAN(0x19); // 选则引脚对应的通道（0x19--P31）
 }
+#endif
 
+#if 0
 /**
  * @brief 配置adc2 adc2 要检测温度、风扇状态
  *      切换完成后，不能马上使用，要等adc稳定
  */
 void adc2_channel_sel(u8 adc_sel_pin)
 {
+
     static u8 last_adc_sel = 0;
     if (last_adc_sel == adc_sel_pin)
     {
@@ -219,6 +233,86 @@ void adc2_channel_sel(u8 adc_sel_pin)
     default:
         break;
     }
+}
+#endif
+
+void adc_channel_sel(u8 adc_sel_pin)
+{
+    // static u8 last_adc_sel = 0;
+    // if (last_adc_sel == adc_sel_pin)
+    // {
+    //     // 如果当前采集adc的引脚就是要配置的adc引脚，不用再继续配置，直接退出
+    //     return;
+    // }
+
+    // last_adc_sel = adc_sel_pin;
+
+    __EnableIRQ(ADC_IRQn); // 使能ADC中断
+    IE_EA = 1;             // 使能总中断
+
+    switch (adc_sel_pin)
+    {
+    case ADC_SEL_PIN_ENGINE:
+    {
+        // ADC配置
+        ADC_ACON1 &= ~(ADC_VREF_SEL(0x7) | ADC_EXREF_SEL(0x01)); // 关闭外部参考电压
+        ADC_ACON1 |= ADC_VREF_SEL(0x5) |                         // 选择内部参考电压 4.2V (用户手册说未校准)
+                     ADC_TEN_SEL(0x3);                           /* 关闭测试信号 */
+        ADC_ACON0 = ADC_CMP_EN(0x1) |                            // 打开ADC中的CMP使能信号
+                    ADC_BIAS_EN(0x1) |                           // 打开ADC偏置电流能使信号
+                    ADC_BIAS_SEL(0x1);                           // 偏置电流：1x
+        ADC_CHS0 = ADC_ANALOG_CHAN(0x17) |                       // 选则引脚对应的通道（0x17--P27）
+                   ADC_EXT_SEL(0x0);                             // 选择外部通道
+    }
+    break;
+
+    case ADC_SEL_PIN_KNOB:
+    {
+        ADC_ACON1 &= ~(ADC_VREF_SEL(0x7)); // 关闭外部参考电压、清除选择的参考电压
+        ADC_ACON1 |= ADC_VREF_SEL(0x6) |   // 选择内部参考电压VCCA
+                     ADC_TEN_SEL(0x3);     // 关闭测试信号
+        ADC_ACON0 = ADC_CMP_EN(0x1) |      // 打开ADC中的CMP使能信号
+                    ADC_BIAS_EN(0x1) |     // 打开ADC偏置电流能使信号
+                    ADC_BIAS_SEL(0x1);     // 偏置电流：1x
+        ADC_CHS0 = ADC_ANALOG_CHAN(0x19) | // 选则引脚对应的通道（0x19--P31）
+                   ADC_EXT_SEL(0x0);       // 选择外部通道
+    }
+    break;
+
+    case ADC_SEL_PIN_TEMP:
+    {
+        ADC_ACON1 &= ~(ADC_VREF_SEL(0x7) | ADC_EXREF_SEL(0) | ADC_INREF_SEL(0)); // 关闭外部参考电压
+        ADC_ACON1 |= ADC_VREF_SEL(0x6) |                                         // 选择内部参考电压VCCA
+                     ADC_TEN_SEL(0x3);                                           // 关闭测试信号
+        ADC_ACON0 = ADC_CMP_EN(0x1) |                                            // 打开ADC中的CMP使能信号
+                    ADC_BIAS_EN(0x1) |                                           // 打开ADC偏置电流能使信号
+                    ADC_BIAS_SEL(0x1);                                           // 偏置电流：1x
+
+        ADC_CHS0 = ADC_ANALOG_CHAN(0x18) | // 选则引脚对应的通道（0x18--P30）
+                   ADC_EXT_SEL(0x0);       // 选择外部通道
+    }
+    break;
+
+    case ADC_SEL_PIN_FAN:
+    {
+        ADC_ACON1 &= ~(ADC_VREF_SEL(0x7) | ADC_EXREF_SEL(0x01) | ADC_INREF_SEL(0)); // 关闭外部参考电压，不选择外部参考，清除选择的参考电压
+        ADC_ACON1 |= ADC_VREF_SEL(0x6) |                                            // 选择内部参考电压VCCA
+                     ADC_TEN_SEL(0x3);                                              // 关闭测试信号
+        ADC_ACON0 = ADC_CMP_EN(0x1) |                                               // 打开ADC中的CMP使能信号
+                    ADC_BIAS_EN(0x1) |                                              // 打开ADC偏置电流能使信号
+                    ADC_BIAS_SEL(0x1);                                              // 偏置电流：1x
+
+        ADC_CHS0 = ADC_ANALOG_CHAN(0x0B) | // 选则引脚对应的通道（0x0B--P13）
+                   ADC_EXT_SEL(0x0);       // 选择外部通道
+    }
+    break;
+
+    default:
+        break;
+    }
+
+    ADC_CFG0 |= ADC_CHAN0_EN(0x1) | // 使能通道0
+                ADC_EN(0x1);        // 使能adc
 }
 
 // adc单次采集+转换（没有滤波）
@@ -270,7 +364,7 @@ void adc2_channel_sel(u8 adc_sel_pin)
 
 // 从引脚上采集滤波后的电压值,函数内部会将采集到的ad转换成对应的电压值
 u32 get_voltage_from_pin(void)
-{  
+{
     return (u32)adc_val_from_temp * 12 / 10;
 }
 
@@ -296,9 +390,8 @@ void temperature_scan(void)
 
         cnt = 0;
     }
- 
+
     voltage = get_voltage_from_pin(); // 得到热敏电阻上的电压
- 
 
 #if USE_MY_DEBUG
     // printf("PIN-8 voltage: %lu mV\n", voltage);
@@ -321,8 +414,8 @@ void temperature_scan(void)
 
         if (cnt >= 10)
         {
-            cnt = 0; 
-            temp_status = TEMP_75; // 状态标志设置为超过75摄氏度
+            cnt = 0;
+            temp_status = TEMP_75; // 状态标志设置为超过75摄氏度   USER_TO_DO  在测试时会屏蔽掉
         }
         else
         {
@@ -457,6 +550,7 @@ void ADC_IRQHandler(void) interrupt ADC_IRQn
 
     // ---------------- 用户函数处理 -------------------
 
+#if 0
     if (ADC_STA & ADC_CHAN0_DONE(0x01))
     {
         ADC_STA |= ADC_CHAN0_DONE(0x01); // 清除ADC0转换完成标志位
@@ -482,6 +576,71 @@ void ADC_IRQHandler(void) interrupt ADC_IRQn
         {
             // 如果当前对应的是检测风扇的adc通道
             adc_val_from_fan = (ADC_DATAH2 << 4) | (ADC_DATAL2 >> 4);
+        }
+    }
+#endif
+
+    if (ADC_STA & ADC_CHAN0_DONE(0x01))
+    {
+        volatile u16 adc_val = (ADC_DATAH0 << 4) | (ADC_DATAL0 >> 4); // 先接收ad值
+        ADC_STA |= ADC_CHAN0_DONE(0x01);                              // 清除ADC0转换完成标志位
+
+        if (ADC_STATUS_SEL_ENGINE == cur_adc_status)
+        {
+            // 更新发动机检测一端的ad值
+
+            static u8 i = 0; // adc采集次数的计数
+            static volatile u32 g_tmpbuff = 0;
+            static volatile u16 g_adcmax = 0;
+            static volatile u16 g_adcmin = 0xFFFF;
+
+            if (i < 20)
+            {
+                i++;
+
+                if (i >= 2) // 丢弃前两次采样值
+                {
+                    if (adc_val > g_adcmax)
+                        g_adcmax = adc_val; // 最大
+                    if (adc_val < g_adcmin)
+                        g_adcmin = adc_val; // 最小
+                    g_tmpbuff += adc_val;
+                }
+
+                if (i < 20)
+                    ADC_CFG0 |= 0x01 << 0; // 开启adc0转换
+            }
+
+            if (i >= 20)
+            {
+                adc_val_from_engine = (g_tmpbuff >> 4); // 除以16，取平均值
+                cur_adc_status = ADC_STATUS_SEL_ENGINE_DONE;
+
+                // 重新初始化使用到的变量：
+                i = 0;
+                g_adcmax = 0;
+                g_adcmin = 0xFFFF;
+                g_tmpbuff = 0;
+                // printf("1 engine scan done\n");
+            }
+        }
+        else if (ADC_STATUS_SEL_KNOB == cur_adc_status)
+        {
+            // 更新旋钮检测一端的ad值
+            adc_val_from_knob = adc_val;
+            // printf("2 knob scan done\n");
+        }
+        else if (ADC_STATUS_SEL_GET_TEMP == cur_adc_status)
+        {
+            // 更新热敏电阻检测一端的ad值
+            adc_val_from_temp = adc_val;
+            // printf("3 temp scan done\n");
+        }
+        else if (ADC_STATUS_SEL_FAN_DETECT == cur_adc_status)
+        {
+            // 更新风扇检测一端的ad值
+            adc_val_from_fan = adc_val;
+            // printf("4 fan scan done\n");
         }
     }
 

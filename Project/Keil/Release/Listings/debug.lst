@@ -1,11 +1,11 @@
-C51 COMPILER V9.60.7.0   DEBUG                                                             11/08/2025 16:53:10 PAGE 1   
+C51 COMPILER V9.60.7.0   DEBUG                                                             11/17/2025 11:42:48 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE DEBUG
 OBJECT MODULE PLACED IN .\Release\Objects\debug.obj
-COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\Libraries\Source\debug.c LARGE OPTIMIZE(9,SIZE) BROWSE INTVECTOR(0
-                    -X000C) INCDIR(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\debug.lst) OBJ
-                    -ECT(.\Release\Objects\debug.obj)
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\Libraries\Source\debug.c LARGE OPTIMIZE(8,SPEED) BROWSE INTVECTOR(
+                    -0X000C) INCDIR(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\debug.lst) OB
+                    -JECT(.\Release\Objects\debug.obj)
 
 line level    source
 
@@ -62,7 +62,7 @@ line level    source
   51          // void debug_putchar(u8 uart_data)
   52          // {
   53          //     while (!(UART1_STA & UART_TX_DONE(0x01)))
-C51 COMPILER V9.60.7.0   DEBUG                                                             11/08/2025 16:53:10 PAGE 2   
+C51 COMPILER V9.60.7.0   DEBUG                                                             11/17/2025 11:42:48 PAGE 2   
 
   54          //         ;
   55          //     UART1_DATA = uart_data;

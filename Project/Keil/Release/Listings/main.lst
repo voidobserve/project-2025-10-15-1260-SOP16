@@ -1,11 +1,11 @@
-C51 COMPILER V9.60.7.0   MAIN                                                              11/08/2025 16:53:10 PAGE 1   
+C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 11:42:48 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
 OBJECT MODULE PLACED IN .\Release\Objects\main.obj
-COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\main.c LARGE OPTIMIZE(9,SIZE) BROWSE INTVECTOR(0X000C) INCDIR
-                    -(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\main.lst) OBJECT(.\Release\
-                    -Objects\main.obj)
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\main.c LARGE OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) INCDI
+                    -R(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\main.lst) OBJECT(.\Release
+                    -\Objects\main.obj)
 
 line level    source
 
@@ -62,7 +62,7 @@ line level    source
                   // FOUT_S13 |= GPIO_FOUT_UART0_TX;              // 配置为UART0_TX
                   // UART0_BAUD1 = (USER_UART0_BAUD >> 8) & 0xFF; // 配置波特率高八位
                   // UART0_BAUD0 = USER_UART0_BAUD & 0xFF;        // 配置波特率低八位
-C51 COMPILER V9.60.7.0   MAIN                                                              11/08/2025 16:53:10 PAGE 2   
+C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 11:42:48 PAGE 2   
 
                   // UART0_CON0 = UART_STOP_BIT(0x0) |
                   //              UART_EN(0x1); // 8bit数据，1bit停止位
@@ -126,7 +126,7 @@ line level    source
              -��射）
  109   1          WDT_KEY = 0xBB;  // 写一个无效的数据，触发写保护
  110   1      
-C51 COMPILER V9.60.7.0   MAIN                                                              11/08/2025 16:53:10 PAGE 3   
+C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 11:42:48 PAGE 3   
 
  111   1      #if USE_MY_DEBUG // 打印串口配置
                   // 初始化打印
@@ -134,192 +134,212 @@ line level    source
                   my_debug_config();
                   printf("sys reset\n");
               
+                  // P01 配置为输出模式
+                  P0_MD0 &= ~(0x03 << 2);
+                  P0_MD0 |= 0x01 << 2;
+                  FOUT_S01 = GPIO_FOUT_AF_FUNC;
+                  P01 = 0;
+              
                   // P02 配置为输出模式
                   P0_MD0 &= ~(0x03 << 4); // 清空对应的寄存器配置
                   P0_MD0 |= 0x01 << 4;    // 输出模式
                   FOUT_S02 = GPIO_FOUT_AF_FUNC;
+                  P02 = 0;
+              
+                  // P05 配置为输出模式
+                  P0_MD1 &= ~(0x03 << 2);
+                  P0_MD1 |= 0x01 << 2;
+                  FOUT_S05 = GPIO_FOUT_AF_FUNC;
+                  P05 = 0;
+              
+                  // P06 配置为输出模式
+                  P0_MD1 &= ~(0x03 << 4);
+                  P0_MD1 |= 0x01 << 4;
+                  FOUT_S06 = GPIO_FOUT_AF_FUNC;
+                  P06 = 0;
               
                   // P21 配置为输出模式
                   P2_MD0 &= ~(0x03 << 2);
                   P2_MD0 |= 0x01 << 2; // 输出模式
                   FOUT_S21 = GPIO_FOUT_AF_FUNC;
+                  P21 = 0;
               
                   // 输出模式：
                   // P1_MD0 &= (GPIO_P13_MODE_SEL(0x3));
                   // P1_MD0 |= GPIO_P13_MODE_SEL(0x1); // 配置为输出模式
                   // FOUT_S13 = GPIO_FOUT_AF_FUNC;     // 选择AF功能输出
               #endif // 打印串口配置
- 132   1      
- 133   1      #if 1
- 134   1          adc_pin_config(); // 配置使用到adc的引脚
- 135   1          adc_config();
- 136   1      
- 137   1          tmr0_config(); // 配置定时器，默认关闭
- 138   1          pwm_init();    // 配置pwm输出的引脚
- 139   1          tmr1_config();
- 140   1      
- 141   1          timer2_config();
- 142   1          timer3_config(); // 要等adc完成初始化，再调用timer3的初始化
- 143   1      
- 144   1          rf_recv_init(); // rf功能初始化
- 145   1          fan_ctl_config();
- 146   1      #endif
- 147   1      
- 148   1          limited_max_pwm_duty = MAX_PWM_DUTY;
- 149   1          limited_pwm_duty_due_to_fan_err = MAX_PWM_DUTY;
- 150   1          limited_pwm_duty_due_to_temp = MAX_PWM_DUTY;
- 151   1          limited_pwm_duty_due_to_unstable_engine = MAX_PWM_DUTY;
  152   1      
- 153   1      // ===================================================================
- 154   1      #if 1 // 开机缓慢启动（PWM信号变化平缓）
- 155   1      
- 156   1          P14 = 0; // 16脚先输出低电平
- 157   1          // c_duty = 0;
- 158   1          cur_pwm_channel_0_duty = 0;
- 159   1          cur_pwm_channel_1_duty = 0;
- 160   1          flag_is_in_power_on = 1; // 表示到了开机缓启动
- 161   1          // while (c_duty < 6000)
- 162   1          // while (c_duty < limited_max_pwm_duty) // 当c_duty 大于 限制的最大占空比后，退出
- 163   1          while (cur_pwm_channel_0_duty < limited_max_pwm_duty || /* 当 cur_pwm_channel_0_duty 大于 限制的
-             -最大占空比后，退出 */
- 164   1                 cur_pwm_channel_1_duty < limited_max_pwm_duty)   /* 当 cur_pwm_channel_1_duty 大于 限制的
-             -最大占空比后，退出 */
- 165   1          {
- 166   2              // adc_update_pin_9_adc_val();        // 采集并更新9脚的ad值
- 167   2              update_max_pwm_duty_coefficient(); // 更新当前的最大占空比
- 168   2      
- 169   2      #if USE_MY_DEBUG // 直接打印0，防止在串口+图像上看到错位
-              
-C51 COMPILER V9.60.7.0   MAIN                                                              11/08/2025 16:53:10 PAGE 4   
+ 153   1      #if 1
+ 154   1          adc_pin_config(); // 配置使用到adc的引脚
+ 155   1          adc_config();
+ 156   1      
+ 157   1          tmr0_config(); // 配置定时器，默认关闭
+ 158   1          pwm_init();    // 配置pwm输出的引脚
+ 159   1          tmr1_config();
+ 160   1      
+ 161   1          timer2_config();
+ 162   1          timer3_config(); // 要等adc完成初始化，再调用timer3的初始化
+ 163   1      
+ 164   1          rf_recv_init(); // rf功能初始化
+ 165   1          fan_ctl_config();
+ 166   1      #endif
+ 167   1      
+ 168   1          limited_max_pwm_duty = MAX_PWM_DUTY;
+ 169   1          limited_pwm_duty_due_to_fan_err = MAX_PWM_DUTY;
+ 170   1          limited_pwm_duty_due_to_temp = MAX_PWM_DUTY;
+ 171   1          limited_pwm_duty_due_to_unstable_engine = MAX_PWM_DUTY;
+ 172   1      
+C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 11:42:48 PAGE 4   
 
+ 173   1      // ===================================================================
+ 174   1      #if 1 // 开机缓慢启动（PWM信号变化平缓）
+ 175   1      
+ 176   1          P14 = 0; // 16脚先输出低电平
+ 177   1          // c_duty = 0;
+ 178   1          cur_pwm_channel_0_duty = 0;
+ 179   1          cur_pwm_channel_1_duty = 0;
+ 180   1          flag_is_in_power_on = 1; // 表示到了开机缓启动
+ 181   1          // while (c_duty < 6000)
+ 182   1          // while (c_duty < limited_max_pwm_duty) // 当c_duty 大于 限制的最大占空比后，退出
+ 183   1          while (cur_pwm_channel_0_duty < limited_max_pwm_duty || /* 当 cur_pwm_channel_0_duty 大于 限制的
+             -最大占空比后，退出 */
+ 184   1                 cur_pwm_channel_1_duty < limited_max_pwm_duty)   /* 当 cur_pwm_channel_1_duty 大于 限制的
+             -最大占空比后，退出 */
+ 185   1          {
+ 186   2              // adc_update_pin_9_adc_val();        // 采集并更新9脚的ad值
+ 187   2              update_max_pwm_duty_coefficient(); // 更新当前的最大占空比
+ 188   2      
+ 189   2      #if USE_MY_DEBUG // 直接打印0，防止在串口+图像上看到错位
+              
                       // printf(",b=0,"); // 防止在串口图像错位
               
               #endif
- 174   2      
- 175   2              if (flag_is_pwm_sub_time_comes) // pwm递减时间到来（该标志位主要用在发动机功率
+ 194   2      
+ 195   2              if (flag_is_pwm_sub_time_comes) // pwm递减时间到来（该标志位主要用在发动机功率
              -不稳定检测中）
- 176   2              {
- 177   3                  flag_is_pwm_sub_time_comes = 0;
- 178   3      
- 179   3                  /*
- 180   3                      只要有一次跳动，退出开机缓启动(改成等到变为 limited_max_pwm_duty 再�
+ 196   2              {
+ 197   3                  flag_is_pwm_sub_time_comes = 0;
+ 198   3      
+ 199   3                  /*
+ 200   3                      只要有一次跳动，退出开机缓启动(改成等到变为 limited_max_pwm_duty 再�
              -��出)，
- 181   3                      由于 adjust_duty 初始值为 MAX_PWM_DUTY ，直接退出会直接设置占空比为 ad
+ 201   3                      由于 adjust_duty 初始值为 MAX_PWM_DUTY ，直接退出会直接设置占空比为 ad
              -just_duty 对应的值，
- 182   3                      会导致灯光闪烁一下
- 183   3      
- 184   3                      目前没有使用提前退出开机缓启动的功能
- 185   3                  */
- 186   3                  // if (adc_val_pin_9 >= ADC_VAL_WHEN_UNSTABLE)
- 187   3                  // {
- 188   3                  //     // if (c_duty >= PWM_DUTY_100_PERCENT)
- 189   3                  //     // if (c_duty >= limited_max_pwm_duty)
- 190   3                  //     if (cur_pwm_channel_0_duty >= limited_max_pwm_duty &&
- 191   3                  //         cur_pwm_channel_1_duty >= limited_max_pwm_duty)
- 192   3                  //     {
- 193   3                  //         // adjust_duty = c_duty;
- 194   3                  //         break;
- 195   3                  //     }
- 196   3                  // }
- 197   3              }
- 198   2      
- 199   2              if (flag_time_comes_during_power_on) // 如果调节时间到来 -- 13ms
- 200   2              {
- 201   3                  flag_time_comes_during_power_on = 0;
- 202   3                  adjust_pwm_duty_when_power_on();
- 203   3              }
- 204   2      
- 205   2              set_pwm_channel_0_duty(cur_pwm_channel_0_duty);
- 206   2              set_pwm_channel_1_duty(cur_pwm_channel_1_duty);
- 207   2              // set_pwm_duty(); // 将 c_duty 写入pwm对应的寄存器
- 208   2              // set_p15_pwm_duty(c_duty);
- 209   2      
- 210   2      #if USE_MY_DEBUG
+ 202   3                      会导致灯光闪烁一下
+ 203   3      
+ 204   3                      目前没有使用提前退出开机缓启动的功能
+ 205   3                  */
+ 206   3                  // if (adc_val_pin_9 >= ADC_VAL_WHEN_UNSTABLE)
+ 207   3                  // {
+ 208   3                  //     // if (c_duty >= PWM_DUTY_100_PERCENT)
+ 209   3                  //     // if (c_duty >= limited_max_pwm_duty)
+ 210   3                  //     if (cur_pwm_channel_0_duty >= limited_max_pwm_duty &&
+ 211   3                  //         cur_pwm_channel_1_duty >= limited_max_pwm_duty)
+ 212   3                  //     {
+ 213   3                  //         // adjust_duty = c_duty;
+ 214   3                  //         break;
+ 215   3                  //     }
+ 216   3                  // }
+ 217   3              }
+ 218   2      
+ 219   2              if (flag_time_comes_during_power_on) // 如果调节时间到来 -- 13ms
+ 220   2              {
+ 221   3                  flag_time_comes_during_power_on = 0;
+ 222   3                  adjust_pwm_duty_when_power_on();
+ 223   3              }
+ 224   2      
+ 225   2              set_pwm_channel_0_duty(cur_pwm_channel_0_duty);
+ 226   2              set_pwm_channel_1_duty(cur_pwm_channel_1_duty);
+ 227   2              // set_pwm_duty(); // 将 c_duty 写入pwm对应的寄存器
+ 228   2              // set_p15_pwm_duty(c_duty);
+ 229   2      
+C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 11:42:48 PAGE 5   
+
+ 230   2      #if USE_MY_DEBUG
                       // printf("power_on_duty %u\n", c_duty);
               #endif //  USE_MY_DEBUG
- 213   2          }
- 214   1      #endif // 开机缓慢启动（PWM信号变化平缓）
- 215   1      
- 216   1          // 缓启动后，立即更新 adjust_duty 的值：
- 217   1          adjust_pwm_channel_0_duty = cur_pwm_channel_0_duty;
- 218   1          adjust_pwm_channel_1_duty = cur_pwm_channel_1_duty;
- 219   1          flag_is_in_power_on = 0; // 表示退出了开机缓启动
- 220   1          // ===================================================================
- 221   1      
- 222   1          while (1)
- 223   1          {
- 224   2      #if 1
- 225   2              update_max_pwm_duty_coefficient(); // 根据当前旋钮的挡位，限制能调节到的最大的
+ 233   2          }
+ 234   1      #endif // 开机缓慢启动（PWM信号变化平缓）
+ 235   1      
+ 236   1          // 缓启动后，立即更新 adjust_duty 的值：
+ 237   1          adjust_pwm_channel_0_duty = cur_pwm_channel_0_duty;
+ 238   1          adjust_pwm_channel_1_duty = cur_pwm_channel_1_duty;
+ 239   1          flag_is_in_power_on = 0; // 表示退出了开机缓启动
+ 240   1          // ===================================================================
+ 241   1      
+ 242   1          while (1)
+ 243   1          {
+ 244   2      #if 1
+ 245   2              update_max_pwm_duty_coefficient(); // 根据当前旋钮的挡位，限制能调节到的最大的
              -pwm占空比
- 226   2              temperature_scan();                // 检测热敏电阻一端的电压值
- 227   2              fan_scan();                        // 检测风扇的状态是否异常，并根据结果来限制
+ 246   2              temperature_scan();                // 检测热敏电阻一端的电压值
+ 247   2              fan_scan();                        // 检测风扇的状态是否异常，并根据结果来限制
              -pwm占空比
-C51 COMPILER V9.60.7.0   MAIN                                                              11/08/2025 16:53:10 PAGE 5   
-
- 228   2              set_duty();                        // 设定到要调节到的脉宽 (设置adjust_duty)
- 229   2      
- 230   2              // according_pin9_to_adjust_pin16();  // 根据9脚的电压来设定16脚的电平
- 231   2              P14 = 0;
- 232   2      
- 233   2              if (flag_is_rf_enable) // 如果使能了rf遥控器的功能
- 234   2              {
- 235   3                  key_driver_scan(&rf_key_para);
- 236   3                  rf_key_handle();
- 237   3              }
- 238   2      
- 239   2              {
- 240   3                  // 如果 expect_adjust_pwm_channel_x_duty 有变化，可以在这里修改 adjust_pwm_channe
+ 248   2              set_duty();                        // 设定到要调节到的脉宽 (设置adjust_duty)
+ 249   2      
+ 250   2              // according_pin9_to_adjust_pin16();  // 根据9脚的电压来设定16脚的电平
+ 251   2              P14 = 0;
+ 252   2      
+ 253   2              if (flag_is_rf_enable) // 如果使能了rf遥控器的功能
+ 254   2              {
+ 255   3                  key_driver_scan(&rf_key_para);
+ 256   3                  rf_key_handle();
+ 257   3              }
+ 258   2      
+ 259   2              {
+ 260   3                  // 如果 expect_adjust_pwm_channel_x_duty 有变化，可以在这里修改 adjust_pwm_channe
              -l_x_duty
- 241   3                  adjust_pwm_channel_0_duty = get_pwm_channel_x_adjust_duty(expect_adjust_pwm_channel_0_duty);
- 242   3                  adjust_pwm_channel_1_duty = get_pwm_channel_x_adjust_duty(expect_adjust_pwm_channel_1_duty);
- 243   3              }
- 244   2      
- 245   2              // 风扇控制：
- 246   2              fan_ctl();
- 247   2      #endif
- 248   2      
- 249   2              // P02 = ~P02; // 测试主循环一轮所需时间
- 250   2      
- 251   2              // 测试用：
- 252   2              // {
- 253   2              //     static u16 cnt = 0;
- 254   2              //     cnt++;
- 255   2      
- 256   2              //     // if (cnt >= 10)
- 257   2              //     if (cnt >= 100)
- 258   2              //     {
- 259   2              //         cnt = 0;
- 260   2              //         // printf("expect_adjust_pwm_channel_0_duty: %u\n", expect_adjust_pwm_channel_0_duty);
- 261   2              //         // printf("expect_adjust_pwm_channel_1_duty: %u\n", expect_adjust_pwm_channel_1_duty);
- 262   2              //         // printf("adjust_pwm_channel_0_duty: %u\n", adjust_pwm_channel_0_duty);
- 263   2              //         // printf("adjust_pwm_channel_1_duty: %u\n", adjust_pwm_channel_1_duty);
- 264   2              //         // printf("cur_pwm_channel_0_duty: %u\n", cur_pwm_channel_0_duty);
- 265   2              //         // printf("cur_pwm_channel_1_duty: %u\n", cur_pwm_channel_1_duty);
- 266   2      
- 267   2              //         // printf("__LINE__ %u\n", __LINE__);
- 268   2              //         // printf("val %u\n", ADC_OVER_DRIVE_VAL);
- 269   2              //         // printf("val %u\n", (u16)adc_val_from_fan);
- 270   2              //         // printf("val %u\n", (u16)adc_val_from_temp);
- 271   2              //         // printf("val %u\n", (u16)adc_val_from_knob);
- 272   2              //         // printf("val %u\n", (u16)adc_val_from_engine);
- 273   2      
- 274   2              //         // P02 = ~P02;
- 275   2              //     }
- 276   2              // }
- 277   2          }
- 278   1      }
- 279          
- 280          /**
- 281           * @}
- 282           */
- 283          
- 284          /*************************** (C) COPYRIGHT 2022 HUGE-IC ***** END OF FILE *****/
+ 261   3                  adjust_pwm_channel_0_duty = get_pwm_channel_x_adjust_duty(expect_adjust_pwm_channel_0_duty);
+ 262   3                  adjust_pwm_channel_1_duty = get_pwm_channel_x_adjust_duty(expect_adjust_pwm_channel_1_duty);
+ 263   3              }
+ 264   2      
+ 265   2              // 风扇控制：
+ 266   2              fan_ctl();
+ 267   2      #endif
+ 268   2      
+ 269   2              // P02 = ~P02; // 测试主循环一轮所需时间
+ 270   2      
+ 271   2              // 测试用：
+ 272   2              // {
+ 273   2              //     static u16 cnt = 0;
+ 274   2              //     cnt++;
+ 275   2      
+ 276   2              //     // if (cnt >= 10)
+ 277   2              //     if (cnt >= 100)
+ 278   2              //     {
+ 279   2              //         cnt = 0;
+ 280   2              //         // printf("expect_adjust_pwm_channel_0_duty: %u\n", expect_adjust_pwm_channel_0_duty);
+ 281   2              //         // printf("expect_adjust_pwm_channel_1_duty: %u\n", expect_adjust_pwm_channel_1_duty);
+ 282   2              //         // printf("adjust_pwm_channel_0_duty: %u\n", adjust_pwm_channel_0_duty);
+ 283   2              //         // printf("adjust_pwm_channel_1_duty: %u\n", adjust_pwm_channel_1_duty);
+ 284   2              //         // printf("cur_pwm_channel_0_duty: %u\n", cur_pwm_channel_0_duty);
+ 285   2              //         // printf("cur_pwm_channel_1_duty: %u\n", cur_pwm_channel_1_duty);
+ 286   2      
+ 287   2              //         // printf("__LINE__ %u\n", __LINE__);
+ 288   2              //         // printf("val %u\n", ADC_OVER_DRIVE_VAL);
+C51 COMPILER V9.60.7.0   MAIN                                                              11/17/2025 11:42:48 PAGE 6   
+
+ 289   2              //         // printf("val %u\n", (u16)adc_val_from_fan);
+ 290   2              //         // printf("val %u\n", (u16)adc_val_from_temp);
+ 291   2              //         // printf("val %u\n", (u16)adc_val_from_knob);
+ 292   2              //         // printf("val %u\n", (u16)adc_val_from_engine);
+ 293   2      
+ 294   2              //         // P02 = ~P02;
+ 295   2              //     }
+ 296   2              // }
+ 297   2          }
+ 298   1      }
+ 299          
+ 300          /**
+ 301           * @}
+ 302           */
+ 303          
+ 304          /*************************** (C) COPYRIGHT 2022 HUGE-IC ***** END OF FILE *****/
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    466    ----
-C51 COMPILER V9.60.7.0   MAIN                                                              11/08/2025 16:53:10 PAGE 6   
-
+   CODE SIZE        =    521    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =      8    ----
    PDATA SIZE       =   ----    ----

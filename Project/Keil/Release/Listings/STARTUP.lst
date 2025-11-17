@@ -1,4 +1,4 @@
-A51 MACRO ASSEMBLER  STARTUP                                                              11/08/2025 16:53:09 PAGE     1
+A51 MACRO ASSEMBLER  STARTUP                                                              11/13/2025 16:28:02 PAGE     1
 
 
 MACRO ASSEMBLER A51 V8.2.7.0
@@ -65,7 +65,7 @@ LOC  OBJ            LINE     SOURCE
                       55     ;
                       56     ; <h> Stack Space for reentrant functions in the SMALL model.
                       57     ;  <q> IBPSTACK: Enable SMALL model reentrant stack
-A51 MACRO ASSEMBLER  STARTUP                                                              11/08/2025 16:53:09 PAGE     2
+A51 MACRO ASSEMBLER  STARTUP                                                              11/13/2025 16:28:02 PAGE     2
 
                       58     ;     <i> Stack space for reentrant functions in the SMALL model.
   0000                59     IBPSTACK        EQU     0       ; set to 1 if small reentrant is used.
@@ -132,12 +132,13 @@ LOC  OBJ            LINE     SOURCE
 0000                 120                     DS      1
                      121     
                      122                     EXTRN CODE (?C_START)
-                     123                     PUBLIC  ?C_STARTUP
-A51 MACRO ASSEMBLER  STARTUP                                                              11/08/2025 16:53:09 PAGE     3
+                     123                     PUBLIC  ?C_STARTUP          ; 声明公共符号
+A51 MACRO ASSEMBLER  STARTUP                                                              11/13/2025 16:28:02 PAGE     3
 
                      124     
-----                 125                     CSEG    AT      0000H
-0000 020000   F      126     ?C_STARTUP:     LJMP    STARTUP1
+----                 125                     CSEG    AT      0000H       ; 8051复位向量地址
+0000 020000   F      126     ?C_STARTUP:     LJMP    STARTUP1            ; 跳转到实际的复位程序入口，最后会跳转到主函蕀a
+                             in()
                      127     
 ----                 128                     RSEG    ?C_C51STARTUP
                      129     
@@ -200,9 +201,9 @@ LOC  OBJ            LINE     SOURCE
                      186     
                      187     ; This code is required if you use L51_BANK.A51 with Banking Mode 4
                      188     ;<h> Code Banking
-                     189     ; <q> Select Bank 0 for L51_BANK.A51 Mode 4
-A51 MACRO ASSEMBLER  STARTUP                                                              11/08/2025 16:53:09 PAGE     4
+A51 MACRO ASSEMBLER  STARTUP                                                              11/13/2025 16:28:02 PAGE     4
 
+                     189     ; <q> Select Bank 0 for L51_BANK.A51 Mode 4
                      190     
                              
                              
@@ -220,7 +221,7 @@ LOC  OBJ            LINE     SOURCE
 000D 0000            204                     DW      00H
                      205     
                      206                     END
-A51 MACRO ASSEMBLER  STARTUP                                                              11/08/2025 16:53:09 PAGE     5
+A51 MACRO ASSEMBLER  STARTUP                                                              11/13/2025 16:28:02 PAGE     5
 
 SYMBOL TABLE LISTING
 ------ ----- -------

@@ -1,11 +1,11 @@
-C51 COMPILER V9.60.7.0   TIMER1                                                            11/08/2025 16:53:10 PAGE 1   
+C51 COMPILER V9.60.7.0   TIMER1                                                            11/17/2025 11:20:04 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE TIMER1
 OBJECT MODULE PLACED IN .\Release\Objects\timer1.obj
-COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\timer1.c LARGE OPTIMIZE(9,SIZE) BROWSE INTVECTOR(0X000C) INCD
-                    -IR(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\timer1.lst) OBJECT(.\Rele
-                    -ase\Objects\timer1.obj)
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\timer1.c LARGE OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) INC
+                    -DIR(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\timer1.lst) OBJECT(.\Rel
+                    -ease\Objects\timer1.obj)
 
 line level    source
 
@@ -62,7 +62,7 @@ line level    source
   51   1          __EnableIRQ(TMR1_IRQn); // 使能中断
   52   1          IE_EA = 1;              // 打开总中断
   53   1      }
-C51 COMPILER V9.60.7.0   TIMER1                                                            11/08/2025 16:53:10 PAGE 2   
+C51 COMPILER V9.60.7.0   TIMER1                                                            11/17/2025 11:20:04 PAGE 2   
 
   54          
   55          /**
@@ -105,7 +105,7 @@ line level    source
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    175    ----
+   CODE SIZE        =    185    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =      4    ----
    PDATA SIZE       =   ----    ----

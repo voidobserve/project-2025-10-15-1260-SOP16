@@ -12,6 +12,7 @@
         "knob_dimming.h": "c",
         "flash.h": "c",
         "fan_ctl.h": "c",
-        "typedef.h": "c"
+        "typedef.h": "c",
+        "adc.h": "c"
     }
 }

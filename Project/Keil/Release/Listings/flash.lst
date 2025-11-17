@@ -1,11 +1,11 @@
-C51 COMPILER V9.60.7.0   FLASH                                                             11/08/2025 16:53:11 PAGE 1   
+C51 COMPILER V9.60.7.0   FLASH                                                             11/17/2025 11:42:49 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE FLASH
 OBJECT MODULE PLACED IN .\Release\Objects\flash.obj
-COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\flash.c LARGE OPTIMIZE(9,SIZE) BROWSE INTVECTOR(0X000C) INCDI
-                    -R(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\flash.lst) OBJECT(.\Releas
-                    -e\Objects\flash.obj)
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\User\flash.c LARGE OPTIMIZE(8,SPEED) BROWSE INTVECTOR(0X000C) INCD
+                    -IR(..\..\Libraries\Include;..\..\User) INTERVAL(3) DEBUG OBJECTEXTEND PRINT(.\Release\Listings\flash.lst) OBJECT(.\Relea
+                    -se\Objects\flash.obj)
 
 line level    source
 
@@ -62,7 +62,7 @@ line level    source
   51          
   52          /**
   53           * @brief  flash program
-C51 COMPILER V9.60.7.0   FLASH                                                             11/08/2025 16:53:11 PAGE 2   
+C51 COMPILER V9.60.7.0   FLASH                                                             11/17/2025 11:42:49 PAGE 2   
 
   54           * @param  addr   : Read data address in flash
   55           * @param  p_data : Read data to flash
@@ -80,7 +80,7 @@ line level    source
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    124    ----
+   CODE SIZE        =    146    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----      10
    PDATA SIZE       =   ----    ----
